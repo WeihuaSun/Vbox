@@ -1,11 +1,13 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#include "transaction/transaction.h"
-
 #include <unordered_set>
 #include <unordered_map>
 #include <queue>
+
+#include "transaction/transaction.h"
+
+
 
 inline size_t hash_combine(size_t seed, size_t value) { return seed ^ (value + 0x9e3779b9 + (seed << 6) + (seed >> 2)); }
 

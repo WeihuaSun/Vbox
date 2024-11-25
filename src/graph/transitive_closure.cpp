@@ -3,7 +3,7 @@
 #include "exception/isolation_exceptions.h"
 
 using namespace std;
-
+using DSG::Edge;
 StandardMatrix::StandardMatrix(size_t n)
     : n_(n), reach_(n, vector<bool>(n, false)), parent_(n, vector<const Edge *>(n, nullptr)) {}
 
@@ -348,7 +348,8 @@ void TransitiveClosure::prudom_opt(const std::vector<Edge> &edges)
         }
     }
     // merge
-    
+    vector<Descendant> descendants;
+
     while (!rev_topo_order.empty())
     {
         uint32_t i = rev_topo_order.front();
@@ -359,18 +360,22 @@ void TransitiveClosure::prudom_opt(const std::vector<Edge> &edges)
             unordered_set<uint32_t> &succs = it->second;
             for (uint32_t s : succs)
             {
-                descendants[i] |= descendants[s];
+                descendants[i].merge(descendants[s]);
             }
         }
 
-        descendants[i].set(i);
-
-        for (uint32_t j = vertices_[i].left(); j < vertices_[i].right(); ++j)
+        for (uint32_t j = vertices_[i].right(); j < vertices_[vertices_[i].right()].right(); ++j)
         {
-            if (descendants[i][j])
-            {
-                set_reach(i, j, true);
-            }
+            descendants[i].merge(descendants[j]);
+        }
+
+        for (uint32_t j : descendants[i].s())
+        {
+            set_reach(i, j, true);
+        }
+        for (int j = descendants[i].d(); j < vertices_[i].right(); ++j)
+        {
+            set_reach(i, j, true);
         }
     }
 }
@@ -383,3 +388,97 @@ void TransitiveClosure::backtrace(const std::vector<Edge> &edges)
         set_parent(e.from(), e.to(), nullptr);
     }
 }
+
+/////////////////////////////////////////////////////////////////////////
+Descendant::Descendant(uint32_t i) : i_(i) { s_.push_back(i); }
+
+void Descendant::merge(const Descendant &other)
+{
+    d_ = min(other.d_, d_);
+    int m = 0;
+    int n = 0;
+    int q = 0;
+    int s1 = s_.size();
+    int s2 = other.s_.size();
+
+    vector<uint32_t> new_s(s1 + s2);
+    while (m < s1 && n < s2)
+    {
+        if (s_[m] == other.s_[n])
+        {
+            if (s_[m] >= d_)
+            {
+                s1 = m;
+                s2 = n;
+                break;
+            }
+            else
+            {
+                new_s[q] = s_[m];
+                m++;
+                n++;
+            }
+        }
+        else if (s_[m] < other.s_[m])
+        {
+            if (s_[m] >= d_)
+            {
+                s1 = m;
+                s2 = n;
+                break;
+            }
+            else
+            {
+                new_s[q] = s_[m];
+                m++;
+            }
+        }
+        else
+        {
+            if (other.s_[n] >= d_)
+            {
+                s1 = m;
+                s2 = n;
+                break;
+            }
+            else
+            {
+                new_s[q] = other.s_[n];
+                n++;
+            }
+        }
+        q++;
+    }
+
+    while (m < s1)
+    {
+        if (s_[m] >= d_)
+        {
+            break;
+        }
+        else
+        {
+            new_s[q] = s_[m];
+            m++;
+            q++;
+        }
+    };
+    while (n < s2)
+    {
+        if (other.s_[n] >= d_)
+        {
+            break;
+        }
+        else
+        {
+            new_s[q] = other.s_[n];
+            n++;
+            q++;
+        }
+    };
+    new_s.resize(q);
+    s_ = new_s;
+}
+
+const std::vector<uint32_t> &Descendant::s() const{return s_;}
+uint32_t Descendant::d() const{return d_;}
