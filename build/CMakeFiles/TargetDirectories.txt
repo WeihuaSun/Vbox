@@ -1,0 +1,3 @@
+/workspace/verifier/build/CMakeFiles/SerVerifier.dir
+/workspace/verifier/build/CMakeFiles/edit_cache.dir
+/workspace/verifier/build/CMakeFiles/rebuild_cache.dir
