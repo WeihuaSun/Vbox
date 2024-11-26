@@ -40,52 +40,66 @@ void HashMatrix::set_parent(uint32_t from, uint32_t to, const Edge *parent) { pa
 size_t HashMatrix::size() const { return n_; }
 size_t HashMatrix::capacity() const { return n_ * n_ * (sizeof(bool) + sizeof(Edge *)); } // to-fix
 
-// CSRMatrix::CSRMatrix(size_t n) : n_(n) {}
-
-// const bool CSRMatrix::reach(uint32_t from, uint32_t to) const
-// {
-//     int start = row_ptr_[from];
-//     int offset = to - start_[from];
-//     if (start == 0)
-//     {
-//         return false;
-//     }
-//     if (offset >= 0 && offset < (end_[from] - start_[from]))
-//     {
-//         return reach_[start + offset];
-//     }
-//     else
-//     {
-//         throw std::runtime_error("Element not found.");
-//     }
-// };
-
-// void CSRMatrix::set_reach(uint32_t from, uint32_t to, bool is_reachable)
-// {
-//     assert(from < row_ptr_.size());
-//     int start = row_ptr_[from];
-//     int numValues = row_ptr_[from + 1] - start;
-//     for (int i = start; i < start + numValues; ++i)
-//     {
-//         if (i == to)
-//         {
-//             reach_[i] = is_reachable;
-//             return;
-//         }
-//     }
-//     checkAndExpand(size_);
-//     reach_[size_++] = is_reachable;
-//     row_ptr_[from + 1] = size_;
-// }
-
-// size_t CSRMatrix::size() const { return n_; }
-//////////////////////////////////////////////////////////////////////////////////////////
-TransitiveClosure::TransitiveClosure(const std::vector<Vertex> &vertices, const VerifyOptions &options) : vertices_(vertices), options_(options), n_(vertices.size())
+CSRMatrix::CSRMatrix(const vector<Vertex> &vertices) : vertices_(vertices), n_(vertices.size())
 {
+    row_ptr_.resize(n_ + 1, 0);
+    reach_.resize(n_ * d_, false);
+    parent_.resize(n_ * d_, nullptr);
+    size_t size = 0;
+    for (const Vertex &v : vertices_)
+    {
+        row_ptr_[v.index()] = size;
+        size += v.right() - v.left();
+    }
 }
-bool TransitiveClosure::reach(uint32_t from, uint32_t to) { return matrix_->reach(from, to); }
 
-std::vector<Edge> TransitiveClosure::insert(const Edge &e)
+const bool CSRMatrix::reach(uint32_t from, uint32_t to) const
+{
+    int row_start = row_ptr_[from];
+    int offset = to - vertices_[from].left();
+    return reach_[row_start + offset];
+};
+
+void CSRMatrix::set_reach(uint32_t from, uint32_t to, bool is_reachable)
+{
+    int row_start = row_ptr_[from];
+    int offset = to - vertices_[from].left();
+    reach_[row_start + offset] = is_reachable;
+}
+
+const Edge *CSRMatrix::parent(uint32_t from, uint32_t to) const
+{
+    int row_start = row_ptr_[from];
+    int offset = to - vertices_[from].left();
+    return parent_[row_start + offset];
+};
+
+void CSRMatrix::set_parent(uint32_t from, uint32_t to, const Edge *parent)
+{
+    int row_start = row_ptr_[from];
+    int offset = to - vertices_[from].left();
+    parent_[row_start + offset] = parent;
+}
+
+size_t CSRMatrix::size() const { return n_; }
+//////////////////////////////////////////////////////////////////////////////////////////
+TransitiveClosure::TransitiveClosure(const vector<Vertex> &vertices, const VerifyOptions &options) : vertices_(vertices), options_(options), n_(vertices.size())
+{
+    if (options.compact)
+    {
+        matrix_ = make_unique<CSRMatrix>(vertices);
+    }
+    else
+    {
+        matrix_ = make_unique<StandardMatrix>(n_);
+    }
+}
+bool TransitiveClosure::reach(uint32_t from, uint32_t to) const { return matrix_->reach(from, to); }
+const ::Edge *TransitiveClosure::parent(uint32_t from, uint32_t to) const { matrix_->parent(from, to); }
+void TransitiveClosure::set_reach(uint32_t from, uint32_t to, bool is_reachable) { matrix_->set_reach(from, to, is_reachable); }
+void TransitiveClosure::set_parent(uint32_t from, uint32_t to, const ::Edge *parent) { matrix_->set_parent(from, to, parent); }
+
+vector<Edge> TransitiveClosure::insert(const Edge &e)
 {
     switch (options_.update_t)
     {
@@ -102,7 +116,31 @@ std::vector<Edge> TransitiveClosure::insert(const Edge &e)
     }
 }
 
-void TransitiveClosure::warshall(const std::vector<Edge> &edges)
+void TransitiveClosure::construct(const vector<::Edge> &edges)
+{
+    switch (options_.construct_t)
+    {
+    case Constructor::C_WARSHALL:
+        warshall(edges);
+        break;
+    case Constructor::C_ITALINO:
+        italino(edges);
+        break;
+    case Constructor::C_ITALINO_OPT:
+        italino_opt(edges);
+        break;
+    case Constructor::C_PURDOM:
+        prudom(edges);
+        break;
+    case Constructor::C_PURDOM_OPT:
+        prudom_opt(edges);
+        break;
+    default:
+        break;
+    }
+}
+
+void TransitiveClosure::warshall(const vector<Edge> &edges)
 {
     for (const Edge &e : edges)
     {
@@ -165,7 +203,7 @@ vector<Edge> TransitiveClosure::italino(const Edge &e)
                     {
                         set_reach(i, j, true);
                         record.emplace_back(i, j);
-                        if (solve)
+                        if (solve_)
                         {
                             set_parent(i, j, &e);
                         }
@@ -176,7 +214,7 @@ vector<Edge> TransitiveClosure::italino(const Edge &e)
     }
 }
 
-void TransitiveClosure::italino(const std::vector<Edge> &edges)
+void TransitiveClosure::italino(const vector<Edge> &edges)
 {
     for (const Edge &e : edges)
     {
@@ -184,7 +222,7 @@ void TransitiveClosure::italino(const std::vector<Edge> &edges)
     }
 }
 
-void TransitiveClosure::italino_opt(const std::vector<Edge> &edges)
+void TransitiveClosure::italino_opt(const vector<Edge> &edges)
 {
     for (const Edge &e : edges)
     {
@@ -215,7 +253,7 @@ vector<Edge> TransitiveClosure::italino_opt(const Edge &e)
                     {
                         set_reach(i, j, true);
                         record.emplace_back(i, j);
-                        if (solve)
+                        if (solve_)
                         {
                             set_parent(i, j, &e);
                         }
@@ -226,18 +264,35 @@ vector<Edge> TransitiveClosure::italino_opt(const Edge &e)
     }
 }
 
-void TransitiveClosure::prudom(const std::vector<Edge> edges)
+void TransitiveClosure::prudom(const vector<Edge> &edges)
 {
     queue<uint32_t> rev_topo_order;
     vector<State> states(n_, State::UNVISITED);
+    unordered_map<uint32_t, unordered_set<uint32_t>> adjacency;
+
+    for (const Edge &e : edges)
+    {
+        adjacency[e.from()].insert(e.to());
+    }
+
+    for (uint32_t i = 0; i < n_; ++i)
+    {
+        if (states[i] == State::UNVISITED)
+        {
+            if (dfs(i, states, rev_topo_order, adjacency))
+            {
+                throw SerializableException("prudom:cycle.");
+            }
+        }
+    }
 
     unordered_map<uint32_t, bitset<MAX_VERTICES>> descendants;
     while (!rev_topo_order.empty())
     {
         uint32_t i = rev_topo_order.front();
         rev_topo_order.pop();
-        auto it = adjacency_.find(i);
-        if (it != adjacency_.end())
+        auto it = adjacency.find(i);
+        if (it != adjacency.end())
         {
             unordered_set<uint32_t> &succs = it->second;
             for (uint32_t s : succs)
@@ -245,7 +300,6 @@ void TransitiveClosure::prudom(const std::vector<Edge> edges)
                 descendants[i] |= descendants[s];
             }
         }
-
         descendants[i].set(i);
 
         for (uint32_t j = vertices_[i].left(); j < vertices_[i].right(); ++j)
@@ -258,18 +312,18 @@ void TransitiveClosure::prudom(const std::vector<Edge> edges)
     }
 }
 
-bool TransitiveClosure::dfs(uint32_t i, vector<State> &states, queue<uint32_t> &rev_topo_order)
+bool TransitiveClosure::dfs(uint32_t i, vector<State> &states, queue<uint32_t> &rev_topo_order, unordered_map<uint32_t, unordered_set<uint32_t>> &adjacency)
 {
     states[i] = State::VISITING;
-    auto it = adjacency_.find(i);
-    if (it != adjacency_.end())
+    auto it = adjacency.find(i);
+    if (it != adjacency.end())
     {
         unordered_set<uint32_t> &succs = it->second;
         for (uint32_t s : succs)
         {
             if (states[s] == State::UNVISITED)
             {
-                if (dfs(s, states, rev_topo_order))
+                if (dfs(s, states, rev_topo_order, adjacency))
                 {
                     return true;
                 }
@@ -285,18 +339,18 @@ bool TransitiveClosure::dfs(uint32_t i, vector<State> &states, queue<uint32_t> &
     return false;
 }
 
-bool TransitiveClosure::dfs_opt(uint32_t i, vector<State> &states, queue<uint32_t> &rev_topo_order, uint32_t *visited)
+bool TransitiveClosure::dfs_opt(uint32_t i, vector<State> &states, queue<uint32_t> &rev_topo_order, uint32_t *visited, unordered_map<uint32_t, unordered_set<uint32_t>> &adjacency)
 {
     states[i] = State::VISITING;
-    auto it = adjacency_.find(i);
-    if (it != adjacency_.end())
+    auto it = adjacency.find(i);
+    if (it != adjacency.end())
     {
         unordered_set<uint32_t> &succs = it->second;
         for (uint32_t s : succs)
         {
             if (states[s] == State::UNVISITED)
             {
-                if (dfs_opt(s, states, rev_topo_order, visited))
+                if (dfs_opt(s, states, rev_topo_order, visited, adjacency))
                 {
                     return true;
                 }
@@ -314,7 +368,7 @@ bool TransitiveClosure::dfs_opt(uint32_t i, vector<State> &states, queue<uint32_
         {
             if (states[j] == State::UNVISITED)
             {
-                if (dfs_opt(j, states, rev_topo_order, visited))
+                if (dfs_opt(j, states, rev_topo_order, visited, adjacency))
                 {
                     return true;
                 }
@@ -331,17 +385,24 @@ bool TransitiveClosure::dfs_opt(uint32_t i, vector<State> &states, queue<uint32_
     return false;
 }
 
-void TransitiveClosure::prudom_opt(const std::vector<Edge> &edges)
+void TransitiveClosure::prudom_opt(const vector<Edge> &edges)
 {
     queue<uint32_t> rev_topo_order;
     vector<State> states(n_, State::UNVISITED);
+
+    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> adjacency;
+
+    for (const Edge &e : edges)
+    {
+        adjacency[e.from()].insert(e.to());
+    }
     // topological sort
     uint32_t visited = n_ - 1;
     for (uint32_t i = 0; i < n_; ++i)
     {
         if (states[i] == State::UNVISITED)
         {
-            if (dfs_opt(i, states, rev_topo_order, &visited))
+            if (dfs_opt(i, states, rev_topo_order, &visited, adjacency))
             {
                 throw SerializableException("prudom_opt:cycle.");
             }
@@ -354,8 +415,8 @@ void TransitiveClosure::prudom_opt(const std::vector<Edge> &edges)
     {
         uint32_t i = rev_topo_order.front();
         rev_topo_order.pop();
-        auto it = adjacency_.find(i);
-        if (it != adjacency_.end())
+        auto it = adjacency.find(i);
+        if (it != adjacency.end())
         {
             unordered_set<uint32_t> &succs = it->second;
             for (uint32_t s : succs)
@@ -380,7 +441,7 @@ void TransitiveClosure::prudom_opt(const std::vector<Edge> &edges)
     }
 }
 
-void TransitiveClosure::backtrace(const std::vector<Edge> &edges)
+void TransitiveClosure::backtrace(const vector<Edge> &edges)
 {
     for (const Edge &e : edges)
     {
@@ -480,5 +541,5 @@ void Descendant::merge(const Descendant &other)
     s_ = new_s;
 }
 
-const std::vector<uint32_t> &Descendant::s() const{return s_;}
-uint32_t Descendant::d() const{return d_;}
+const vector<uint32_t> &Descendant::s() const { return s_; }
+uint32_t Descendant::d() const { return d_; }

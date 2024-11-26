@@ -40,7 +40,7 @@ public:
     void set_write(uint64_t k, Write *w);
     void set_predicate(Predicate *p);
     const std::unordered_set<Predicate *> predicates() const;
-
+    void clear();
     Transaction *transaction() const;
 
     std::string to_string() const;

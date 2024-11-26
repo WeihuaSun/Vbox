@@ -46,8 +46,6 @@ private:
     std::vector<std::vector<const DSG::Edge *>> parent_;
 };
 
-#include <unordered_map>
-
 class HashMatrix : public ReachabilityMatrix
 {
 public:
@@ -65,97 +63,48 @@ private:
     std::unordered_map<uint32_t, std::unordered_map<uint32_t, const DSG::Edge *>> parent_;
 };
 
-// class CSRMatrix : public ReachabilityMatrix
-// {
-// public:
-//     CSRMatrix(size_t n);
-//     const bool reach(uint32_t from, uint32_t to) const override;
-//     void set_reach(uint32_t from, uint32_t to, bool is_reachable) override;
-//     size_t size() const override;
-//     size_t capacity() const override;
+class CSRMatrix : public ReachabilityMatrix
+{
+public:
+    CSRMatrix(const std::vector<Vertex> &vertices);
+    const bool reach(uint32_t from, uint32_t to) const override;
+    void set_reach(uint32_t from, uint32_t to, bool is_reachable) override;
+    const DSG::Edge *parent(uint32_t from, uint32_t to) const override;
+    void set_parent(uint32_t from, uint32_t to, const DSG::Edge *parent) override;
+    size_t size() const override;
+    size_t capacity() const override;
 
-//     void set_reach(uint32_t from, uint32_t to, bool is_reachable) override
-//     {
-//         if (from >= row_ptr_.size() - 1)
-//         {
-//             throw std::out_of_range("Row index out of bounds.");
-//         }
-//         int start = row_ptr_[from];
-//         int numValues = row_ptr_[from + 1] - start;
+private:
+    void checkAndExpand(size_t requiredSize)
+    {
+        if (reach_.size() < requiredSize)
+        {
+            size_t newSize = std::max(reach_.size() * 2, requiredSize);
+            reach_.resize(newSize, false);
+            parent_.resize(newSize, nullptr);
+        }
+    }
 
-//         for (int i = start; i < start + numValues; ++i)
-//         {
-//             if (i == to)
-//             {
-//                 values_[i] = is_reachable;
-//                 return;
-//             }
-//         }
-//         // No match found, expand matrix
-//         checkAndExpand(size_);
-//         values_[size_++] = is_reachable;
-//         row_ptr_[from + 1] = size_;
-//     }
-
-//     bool reach(uint32_t from, uint32_t to) const override
-//     {
-//         if (from >= row_ptr_.size() - 1 || to >= row_ptr_.size() - 1)
-//         {
-//             return false;
-//         }
-//         int start = row_ptr_[from];
-//         int end = row_ptr_[from + 1];
-
-//         for (int i = start; i < end; ++i)
-//         {
-//             if (i == to)
-//             {
-//                 return values_[i];
-//             }
-//         }
-//         return false;
-//     }
-
-// private:
-//     void preAllocate(int n, int k)
-//     {
-//         row_ptr_.resize(n + 1, 0);
-//         reach_.resize(n * k, false);
-
-//     }
-//     void checkAndExpand(size_t requiredSize)
-//     {
-//         if (reach_.size() < requiredSize)
-//         {
-//             size_t newSize = std::max(reach_.size() * 2, requiredSize);
-//             reach_.resize(newSize, false);
-//             parent_.resize(newSize, nullptr);
-//         }
-//     }
-
-// private:
-//     size_t n_;
-//     size_t d_ = 10;
-//     std::vector<bool> reach_;
-//     std::vector<DSG::Edge *> parent_;
-//     std::vector<uint32_t> row_ptr_;
-//     std::vector<uint32_t> start_;
-//     std::vector<uint32_t> end_;
-// };
+private:
+    size_t n_;
+    size_t d_ = 10;
+    std::vector<Vertex> vertices_;
+    std::vector<bool> reach_;
+    std::vector<const DSG::Edge *> parent_;
+    std::vector<uint32_t> row_ptr_;
+};
 
 class TransitiveClosure
 {
 public:
     TransitiveClosure(const std::vector<Vertex> &vertices, const VerifyOptions &options);
-    bool reach(uint32_t from, uint32_t to);
-    DSG::Edge parent(uint32_t from, uint32_t to);
+    bool reach(uint32_t from, uint32_t to) const;
+    const DSG::Edge *parent(uint32_t from, uint32_t to) const;
     void set_reach(uint32_t from, uint32_t to, bool is_reachable);
     void set_parent(uint32_t from, uint32_t to, const DSG::Edge *parent);
     std::vector<DSG::Edge> insert(const DSG::Edge &e);
-
+    void construct(const vector<DSG::Edge> &edges);
     void backtrace(const std::vector<DSG::Edge> &edges);
-    bool dfs(uint32_t i, std::vector<State> &states, std::queue<uint32_t> &rev_topo_order);
-    bool dfs_opt(uint32_t i, std::vector<State> &states, std::queue<uint32_t> &rev_topo_order, uint32_t *visited);
 
 private:
     void warshall(const std::vector<DSG::Edge> &edges);
@@ -167,16 +116,19 @@ private:
     void italino_opt(const std::vector<DSG::Edge> &edges);
     std::vector<DSG::Edge> italino_opt(const DSG::Edge &edge);
 
-    void prudom(const std::vector<DSG::Edge> edges);
+    void prudom(const std::vector<DSG::Edge> &edges);
     void prudom_opt(const std::vector<DSG::Edge> &edges);
+
+    bool dfs(uint32_t i, std::vector<State> &states, std::queue<uint32_t> &rev_topo_order, std::unordered_map<uint32_t, std::unordered_set<uint32_t>> &adjacency);
+    bool dfs_opt(uint32_t i, std::vector<State> &states, std::queue<uint32_t> &rev_topo_order, uint32_t *visited, std::unordered_map<uint32_t, std::unordered_set<uint32_t>> &adjacency);
 
 private:
     std::vector<Vertex> vertices_;
     VerifyOptions options_;
     size_t n_;
     std::unique_ptr<ReachabilityMatrix> matrix_;
-    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> adjacency_;
-    bool solve;
+
+    bool solve_;
 };
 
 class Descendant

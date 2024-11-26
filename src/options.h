@@ -35,6 +35,7 @@ public:
     std::string sat = "vboxsat";
 
     Updater update_t;
+    Constructor construct_t;
 
     int density = 10;
 
@@ -53,7 +54,30 @@ public:
         if (argc > 6)
             prune = argv[6];
         if (argc > 7)
+        {
             construct = argv[7];
+            if (construct == "warshall")
+            {
+                construct_t = Constructor::C_WARSHALL;
+            }
+            else if (construct == "italino")
+            {
+                construct_t = Constructor::C_ITALINO;
+            }
+            else if (construct == "italino_opt")
+            {
+                construct_t = Constructor::C_ITALINO_OPT;
+            }
+            else if (construct == "purdom")
+            {
+                construct_t = Constructor::C_PURDOM;
+            }
+            else if (construct == "purdom_opt")
+            {
+                construct_t = Constructor::C_PURDOM_OPT;
+            }
+        }
+
         if (argc > 8)
             update = argv[8];
         if (argc > 9)

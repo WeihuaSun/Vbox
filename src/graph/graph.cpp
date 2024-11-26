@@ -24,13 +24,21 @@ void Vertex::set_write(uint64_t k, Write *w)
     {
         writes_[k]->combine(w);
     }
-    else{
+    else
+    {
         writes_[k] = w;
     }
 }
 
 void Vertex::set_predicate(Predicate *p) { predicates_.insert(p); }
 const unordered_set<Predicate *> Vertex::predicates() const { return predicates_; }
+
+void Vertex::clear()
+{
+    reads_.clear();
+    writes_.clear();
+    predicates_.clear();
+}
 
 Transaction *Vertex::transaction() const { return trx_; }
 
@@ -42,7 +50,7 @@ string Vertex::to_string() const
 }
 
 ///////////////////////////////////////////////////////////////////
-Edge::Edge(): s_(0), t_(0) {}
-Edge::Edge(uint32_t s, uint32_t t) : s_(s), t_(t) {}
-uint32_t Edge::from() const { return s_; }
-uint32_t Edge::to() const { return t_; }
+DSG::Edge:: Edge() : s_(0), t_(0) {}
+DSG::Edge:: Edge(uint32_t s, uint32_t t) : s_(s), t_(t) {}
+uint32_t DSG::Edge::from() const { return s_; }
+uint32_t DSG::Edge::to() const { return t_; }

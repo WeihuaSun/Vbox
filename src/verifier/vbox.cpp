@@ -2,7 +2,8 @@
 #include "exception/isolation_exceptions.h"
 
 using namespace std;
-using DSG::Edge; 
+using DSG::Edge;
+
 Vbox::Vbox(const VerifyOptions &options)
 {
     trx_manager_.load(options.log);
@@ -14,7 +15,7 @@ Vbox::Vbox(const VerifyOptions &options)
         i++;
     }
     n_ = i;
-    closure_ = new TransitiveClosure(vertices_);
+    closure_ = new TransitiveClosure(vertices_, options_);
 }
 
 bool Vbox::run()
@@ -740,4 +741,3 @@ void Vbox::init()
         vertices_[i].set_right(vertices_.size());
     }
 }
-
