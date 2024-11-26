@@ -126,6 +126,7 @@ ItemConstraint *ConstraintVar::constraint() const { return item_cst_; }
 PredicateDirection *ConstraintVar::direction() const { return direction_; }
 const std::unordered_set<DSG::Edge> &ConstraintVar::edges() const { return undetermined_edges_; }
 int ConstraintVar::level() const { return level_; }
+int ConstraintVar::var() const { return var_; }
 const DSG::Edge *ConstraintVar::reason() const { return reason_; }
 bool ConstraintVar::assign() const { return assign_; }
 

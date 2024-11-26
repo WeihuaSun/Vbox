@@ -14,9 +14,11 @@ include_directories(
 set(SOURCES
     src/transaction/transaction.cpp
     src/graph/graph.cpp
+    src/graph/transitive_closure.cpp
     src/verifier/vbox.cpp
     src/verifier/leopard.cpp
     src/solver/constraint.cpp
+    src/solver/solver.cpp
     src/main.cpp
 )
 

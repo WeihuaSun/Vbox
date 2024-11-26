@@ -1,9 +1,11 @@
 file(REMOVE_RECURSE
   "CMakeFiles/SerVerifier.dir/src/transaction/transaction.cpp.o"
   "CMakeFiles/SerVerifier.dir/src/graph/graph.cpp.o"
+  "CMakeFiles/SerVerifier.dir/src/graph/transitive_closure.cpp.o"
   "CMakeFiles/SerVerifier.dir/src/verifier/vbox.cpp.o"
   "CMakeFiles/SerVerifier.dir/src/verifier/leopard.cpp.o"
   "CMakeFiles/SerVerifier.dir/src/solver/constraint.cpp.o"
+  "CMakeFiles/SerVerifier.dir/src/solver/solver.cpp.o"
   "CMakeFiles/SerVerifier.dir/src/main.cpp.o"
   "SerVerifier.pdb"
   "SerVerifier"

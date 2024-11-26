@@ -39,10 +39,10 @@ void VboxSolver::formulate(vector<unique_ptr<ItemConstraint>> &item_csts,
         }
         // Only one of B1, B2, B3.. is assigned True
         vec<Lit> ps; //(B1 or B2 or B3...)
-        for (int i = 0; i < vars_.size(); ++i)
+        for (size_t i = 0; i < vars_.size(); ++i)
         {
             ps.push(mkLit(tmp_vars[i], false));
-            for (int j = i + 1; j < tmp_vars.size(); ++j)
+            for (size_t j = i + 1; j < tmp_vars.size(); ++j)
             {
                 addClause(mkLit(tmp_vars[i], true), mkLit(tmp_vars[j], true)); // not Bi or not Bj
             }
@@ -108,7 +108,7 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
                     vbox_calc_reason(reason, &e);
                     return;
                 }
-                const auto &changes = closure_->insert(&e);
+                const auto &changes = closure_->insert(e);
                 for (const ::Edge &changedEdge : changes)
                 {
                     ::Edge reject(changedEdge.to(), changedEdge.from());
@@ -226,7 +226,36 @@ bool VboxSolver::check()
     {
         reason.clear();
         v_propagate(reason);
+        if (reason.size() > 0)
+        {
+            if (decision_level() == 0)
+            {
+                return false;
+            }
+            else
+            {
+                vector<ConstraintVar *> learned;
+                int bkLevel = analyze(reason, learned);
+                Monosat::vec<Monosat::Lit> sat_clause;
+                for (ConstraintVar *lcVar : learnedClause)
+                {
+                    sat_clause.push(Monosat::mkLit(lcVar->var(), lcVar->assign()));
+                }
+                addClause(sat_clause);
+                backtrace(bkLevel);
+            }
+        }
+        else
+        {
+            v_trail_lim_.push_back(gTrail.size());
+            var = *unassigned_.begin();
+            unassigned_.erase(unassigned_.begin());
+            var->set_assign(true);
+            var->set_level(decision_level());
+            gTrail.push_back(var);
+        }
     }
+    return true;
 }
 
 MiniSolver::MiniSolver() { sat_solver_ = newSolver(); }

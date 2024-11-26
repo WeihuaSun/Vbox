@@ -37,6 +37,8 @@ public:
     Updater update_t;
     Constructor construct_t;
 
+    bool collect = false;
+
     int density = 10;
 
     void parse(int argc, char *argv[])
@@ -82,6 +84,7 @@ public:
             update = argv[8];
         if (argc > 9)
             sat = argv[9];
+        collect = (sat == "monosat" || "minisat" || construct == "purdom" || construct == "italino");
     }
 
     void print() const

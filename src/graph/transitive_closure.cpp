@@ -6,8 +6,7 @@ using namespace std;
 using DSG::Edge;
 StandardMatrix::StandardMatrix(size_t n)
     : n_(n), reach_(n, vector<bool>(n, false)), parent_(n, vector<const Edge *>(n, nullptr)) {}
-
-const bool StandardMatrix::reach(uint32_t from, uint32_t to) const { return reach_[from][to]; }
+ bool StandardMatrix::reach(uint32_t from, uint32_t to) const { return reach_[from][to]; }
 void StandardMatrix::set_reach(uint32_t from, uint32_t to, bool is_reachable) { reach_[from][to] = is_reachable; }
 const Edge *StandardMatrix::parent(uint32_t from, uint32_t to) const { return parent_[from][to]; }
 void StandardMatrix::set_parent(uint32_t from, uint32_t to, const Edge *parent) { parent_[from][to] = parent; }
@@ -15,7 +14,7 @@ size_t StandardMatrix::size() const { return n_; }
 size_t StandardMatrix::capacity() const { return n_ * n_ * (sizeof(bool) + sizeof(Edge *)); }
 
 HashMatrix::HashMatrix(size_t n) : n_(n) {}
-const bool HashMatrix::reach(uint32_t from, uint32_t to) const
+bool HashMatrix::reach(uint32_t from, uint32_t to) const
 {
     auto from_iter = reach_.find(from);
     if (from_iter != reach_.end())
@@ -53,12 +52,12 @@ CSRMatrix::CSRMatrix(const vector<Vertex> &vertices) : vertices_(vertices), n_(v
     }
 }
 
-const bool CSRMatrix::reach(uint32_t from, uint32_t to) const
+bool CSRMatrix::reach(uint32_t from, uint32_t to) const
 {
     int row_start = row_ptr_[from];
     int offset = to - vertices_[from].left();
     return reach_[row_start + offset];
-};
+}
 
 void CSRMatrix::set_reach(uint32_t from, uint32_t to, bool is_reachable)
 {
@@ -72,7 +71,7 @@ const Edge *CSRMatrix::parent(uint32_t from, uint32_t to) const
     int row_start = row_ptr_[from];
     int offset = to - vertices_[from].left();
     return parent_[row_start + offset];
-};
+}
 
 void CSRMatrix::set_parent(uint32_t from, uint32_t to, const Edge *parent)
 {
@@ -101,19 +100,19 @@ void TransitiveClosure::set_parent(uint32_t from, uint32_t to, const ::Edge *par
 
 vector<Edge> TransitiveClosure::insert(const Edge &e)
 {
+    vector<Edge> r;
     switch (options_.update_t)
     {
     case Updater::U_WARSHALL:
-        warshall(e);
-        break;
+        return warshall(e);
     case Updater::U_ITALINO:
-        italino(e);
-        break;
+        return italino(e);
     case Updater::U_ITALINO_OPT:
-        italino_opt(e);
+        return italino_opt(e);
     default:
         break;
     }
+    return r;
 }
 
 void TransitiveClosure::construct(const vector<::Edge> &edges)
@@ -149,11 +148,11 @@ void TransitiveClosure::warshall(const vector<Edge> &edges)
             set_reach(e.from(), e.to(), true);
         }
     }
-    for (int k = 0; k < n_; k++)
+    for (size_t k = 0; k < n_; k++)
     {
-        for (int i = 0; i < n_; i++)
+        for (size_t i = 0; i < n_; i++)
         {
-            for (int j = 0; j < n_; j++)
+            for (size_t j = 0; j < n_; j++)
             {
                 if (reach(i, k) && reach(k, j) && !reach(i, j))
                 {
@@ -171,11 +170,11 @@ vector<Edge> TransitiveClosure::warshall(const Edge &e)
     {
         set_reach(e.from(), e.to(), true);
     }
-    for (int k = 0; k < n_; k++)
+    for (size_t k = 0; k < n_; k++)
     {
-        for (int i = 0; i < n_; i++)
+        for (size_t i = 0; i < n_; i++)
         {
-            for (int j = 0; j < n_; j++)
+            for (size_t j = 0; j < n_; j++)
             {
                 if (reach(i, k) && reach(k, j) && !reach(i, j))
                 {
@@ -212,6 +211,7 @@ vector<Edge> TransitiveClosure::italino(const Edge &e)
             }
         }
     }
+    return record;
 }
 
 void TransitiveClosure::italino(const vector<Edge> &edges)
@@ -262,6 +262,7 @@ vector<Edge> TransitiveClosure::italino_opt(const Edge &e)
             }
         }
     }
+    return record;
 }
 
 void TransitiveClosure::prudom(const vector<Edge> &edges)
@@ -434,7 +435,7 @@ void TransitiveClosure::prudom_opt(const vector<Edge> &edges)
         {
             set_reach(i, j, true);
         }
-        for (int j = descendants[i].d(); j < vertices_[i].right(); ++j)
+        for (uint32_t j = descendants[i].d(); j < vertices_[i].right(); ++j)
         {
             set_reach(i, j, true);
         }

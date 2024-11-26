@@ -1,7 +1,7 @@
 
 #include "constraint.h"
 #include "graph/graph.h"
-#include "transitive_closure.h"
+#include "graph/transitive_closure.h"
 #include <monosat/api/Monosat.h>
 #include <memory>
 #include <vector>
@@ -22,10 +22,10 @@ public:
     size_t decision_level() const;
 
     void sat_calc_reason(std::unordered_set<ConstraintVar *> &reason, Monosat::CRef conflict);
-    void VboxSolver::vbox_calc_reason(std::unordered_set<ConstraintVar *> &reason, const DSG::Edge *reason_edge);
+    void vbox_calc_reason(std::unordered_set<ConstraintVar *> &reason, const DSG::Edge *reason_edge);
 
     std::vector<ConstraintVar *> v_trail_;
-    int v_head_;
+    size_t v_head_=0;
     std::vector<std::vector<DSG::Edge>> record_;
 
 private:

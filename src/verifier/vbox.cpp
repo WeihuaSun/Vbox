@@ -256,7 +256,7 @@ void Vbox::generate_pred_constraint()
                     }
                 }
 
-                bool left_candidate = false;
+                //bool left_candidate = false;
 
                 for (uint32_t j : installs_[key])
                 {
@@ -283,7 +283,7 @@ void Vbox::generate_pred_constraint()
                                 determined_directions_[rw].insert(direction);
                             }
                         }
-                        left_candidate = true;
+                        //left_candidate = true;
                         break;
                     }
                 }

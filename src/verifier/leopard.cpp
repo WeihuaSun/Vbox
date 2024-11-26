@@ -89,8 +89,8 @@ bool Leopard::run()
             actives_vectices.push_back(i);
             sort_write(i);
             first_updater_win(i);
-            //ssi_certifier();
-            //garbageCollection();
+            ssi_certifier();
+            garbage_collection();
             //v.clear();
         }
         for (uint32_t j : actives_vectices)
@@ -110,23 +110,21 @@ vector<uint32_t> Leopard::candidate(Read *read, Vertex &r_trx)
 {
     uint64_t key = read->key();
     vector<uint32_t> candidates;
-    Vertex *pivotTxn = nullptr;
+    Vertex *pivot = nullptr;
     const vector<uint32_t> &key_installer = active_install_[key];
     for (auto it = key_installer.rbegin(); it != key_installer.rend(); ++it)
     {
-        Vertex &trx = vertices_[*it];
-        Write *write = trx.writes().at(key);
-
-        if (trx.end() <= r_trx.start())
+        Vertex &w_trx = vertices_[*it];
+        if (w_trx.end() <= r_trx.start())
         {
-            if (pivotTxn == nullptr)
+            if (pivot == nullptr)
             {
-                pivotTxn = &trx;
+                pivot = &w_trx;
                 candidates.push_back(*it);
             }
             else
             {
-                if (trx.end() <= pivotTxn->start())
+                if (w_trx.end() <= pivot->start())
                 {
                     candidates.push_back(*it);
                 }
@@ -140,24 +138,24 @@ vector<uint32_t> Leopard::candidate(Read *read, Vertex &r_trx)
     return candidates;
 }
 
-void Leopard::consistent_read(uint32_t i)
+void Leopard::consistent_read(uint32_t j)
 {
-    const vector<Read *> reads = reads_.at(i);
+    const vector<Read *> reads = reads_.at(j);
     for (Read *read : reads)
     {
         uint64_t key = read->key();
         if (read->from_oid() != 0)
         {
-            vector<uint32_t> candidates = candidate(read, vertices_[i]);
+            vector<uint32_t> candidates = candidate(read, vertices_[j]);
             bool find = false;
-            for (uint32_t j : candidates)
+            for (uint32_t i : candidates)
             {
-                Vertex &w_trx = vertices_[j];
+                Vertex &w_trx = vertices_[i];
                 Write *write = w_trx.writes().at(key);
                 if (read->from_oid() == write->oid())
                 {
-                    w_trx.set_read(key, i);
-                    wr_edges_.push_back(::Edge(j, i));
+                    w_trx.set_read(key, j);
+                    wr_edges_.push_back(::Edge(i, j));
                     find = true;
                 }
             }
@@ -170,30 +168,30 @@ void Leopard::consistent_read(uint32_t i)
     }
 }
 
-void Leopard::sort_write(uint32_t i)
+void Leopard::sort_write(uint32_t j)
 {
-    Vertex &v = vertices_[i];
+    Vertex &v = vertices_[j];
     for (auto &write : v.writes())
     {
         uint64_t key = write.first;
-        Write *curWrite = write.second;
+        Write *v_write = write.second;
 
         auto active_it = active_install_[key].begin();
         while (active_it != active_install_[key].end())
         {
-            uint32_t j = *active_it;
-            Vertex &u = vertices_[j];
+            uint32_t i = *active_it;
+            Vertex &u = vertices_[i];
 
-            if (replacement_time_[key][j] <= v.start())
+            if (replacement_time_[key][i] <= v.start())
             {
                 auto it = min_reads_.find(key);
-                if (it == min_reads_.end() || min_reads_[key].size() == 0 || replacement_time_[key][j] <= min_reads_[key].min()->start())
+                if (it == min_reads_.end() || min_reads_[key].size() == 0 || replacement_time_[key][i] <= min_reads_[key].min()->start())
                 {
-                    // garbageTxn[key].insert(j);
+                    garbage_[key].insert(i);
                     ++active_it;
                     for (auto it = version_order_[key].begin(); it != version_order_[key].end(); ++it)
                     {
-                        if (*it == j)
+                        if (*it == i)
                         {
                             auto nextIt = std::next(it);
                             for (uint32_t k : u.reads().at(key))
@@ -213,15 +211,15 @@ void Leopard::sort_write(uint32_t i)
             else if (u.end() <= v.start())
             {
                 ++active_it;
-                replacement_time_[key][j] = min(v.end(), replacement_time_[key][j]);
+                replacement_time_[key][i] = min(v.end(), replacement_time_[key][i]);
             }
             else
             {
                 ++active_it;
             }
         }
-        replacement_time_[key][i] = UINT64_MAX;
-        active_install_[key].push_back(i);
+        replacement_time_[key][j] = UINT64_MAX;
+        active_install_[key].push_back(j);
     }
 }
 
@@ -287,9 +285,9 @@ void Leopard::to_certifier(const vector<::Edge> &edges)
     }
 }
 
-void Leopard::ssi_certifier(const vector<::Edge> &anti_edges)
+void Leopard::ssi_certifier()
 {
-    for (const ::Edge &e : anti_edges)
+    for (const ::Edge &e : rw_edges_)
     {
         uint32_t from = e.from();
         uint32_t to = e.to();

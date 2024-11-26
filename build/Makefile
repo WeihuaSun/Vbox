@@ -48,10 +48,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/weihua/Vbox
+CMAKE_SOURCE_DIR = /workspace/Vbox
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/weihua/Vbox/build
+CMAKE_BINARY_DIR = /workspace/Vbox/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -80,9 +80,9 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/weihua/Vbox/build/CMakeFiles /home/weihua/Vbox/build/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/Vbox/build/CMakeFiles /workspace/Vbox/build/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/weihua/Vbox/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/Vbox/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -150,6 +150,33 @@ src/graph/graph.cpp.s:
 	$(MAKE) -f CMakeFiles/SerVerifier.dir/build.make CMakeFiles/SerVerifier.dir/src/graph/graph.cpp.s
 .PHONY : src/graph/graph.cpp.s
 
+src/graph/transitive_closure.o: src/graph/transitive_closure.cpp.o
+
+.PHONY : src/graph/transitive_closure.o
+
+# target to build an object file
+src/graph/transitive_closure.cpp.o:
+	$(MAKE) -f CMakeFiles/SerVerifier.dir/build.make CMakeFiles/SerVerifier.dir/src/graph/transitive_closure.cpp.o
+.PHONY : src/graph/transitive_closure.cpp.o
+
+src/graph/transitive_closure.i: src/graph/transitive_closure.cpp.i
+
+.PHONY : src/graph/transitive_closure.i
+
+# target to preprocess a source file
+src/graph/transitive_closure.cpp.i:
+	$(MAKE) -f CMakeFiles/SerVerifier.dir/build.make CMakeFiles/SerVerifier.dir/src/graph/transitive_closure.cpp.i
+.PHONY : src/graph/transitive_closure.cpp.i
+
+src/graph/transitive_closure.s: src/graph/transitive_closure.cpp.s
+
+.PHONY : src/graph/transitive_closure.s
+
+# target to generate assembly for a file
+src/graph/transitive_closure.cpp.s:
+	$(MAKE) -f CMakeFiles/SerVerifier.dir/build.make CMakeFiles/SerVerifier.dir/src/graph/transitive_closure.cpp.s
+.PHONY : src/graph/transitive_closure.cpp.s
+
 src/main.o: src/main.cpp.o
 
 .PHONY : src/main.o
@@ -203,6 +230,33 @@ src/solver/constraint.s: src/solver/constraint.cpp.s
 src/solver/constraint.cpp.s:
 	$(MAKE) -f CMakeFiles/SerVerifier.dir/build.make CMakeFiles/SerVerifier.dir/src/solver/constraint.cpp.s
 .PHONY : src/solver/constraint.cpp.s
+
+src/solver/solver.o: src/solver/solver.cpp.o
+
+.PHONY : src/solver/solver.o
+
+# target to build an object file
+src/solver/solver.cpp.o:
+	$(MAKE) -f CMakeFiles/SerVerifier.dir/build.make CMakeFiles/SerVerifier.dir/src/solver/solver.cpp.o
+.PHONY : src/solver/solver.cpp.o
+
+src/solver/solver.i: src/solver/solver.cpp.i
+
+.PHONY : src/solver/solver.i
+
+# target to preprocess a source file
+src/solver/solver.cpp.i:
+	$(MAKE) -f CMakeFiles/SerVerifier.dir/build.make CMakeFiles/SerVerifier.dir/src/solver/solver.cpp.i
+.PHONY : src/solver/solver.cpp.i
+
+src/solver/solver.s: src/solver/solver.cpp.s
+
+.PHONY : src/solver/solver.s
+
+# target to generate assembly for a file
+src/solver/solver.cpp.s:
+	$(MAKE) -f CMakeFiles/SerVerifier.dir/build.make CMakeFiles/SerVerifier.dir/src/solver/solver.cpp.s
+.PHONY : src/solver/solver.cpp.s
 
 src/transaction/transaction.o: src/transaction/transaction.cpp.o
 
@@ -297,12 +351,18 @@ help:
 	@echo "... src/graph/graph.o"
 	@echo "... src/graph/graph.i"
 	@echo "... src/graph/graph.s"
+	@echo "... src/graph/transitive_closure.o"
+	@echo "... src/graph/transitive_closure.i"
+	@echo "... src/graph/transitive_closure.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
 	@echo "... src/solver/constraint.o"
 	@echo "... src/solver/constraint.i"
 	@echo "... src/solver/constraint.s"
+	@echo "... src/solver/solver.o"
+	@echo "... src/solver/solver.i"
+	@echo "... src/solver/solver.s"
 	@echo "... src/transaction/transaction.o"
 	@echo "... src/transaction/transaction.i"
 	@echo "... src/transaction/transaction.s"

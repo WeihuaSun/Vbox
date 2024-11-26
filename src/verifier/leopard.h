@@ -40,7 +40,7 @@ private:
     std::vector<uint32_t> candidate(Read *read, Vertex &r_trx_);
     void sort_write(uint32_t i);
     void first_updater_win(uint32_t i);
-    void ssi_certifier(const std::vector<DSG::Edge> &edges);
+    void ssi_certifier();
     void to_certifier(const std::vector<DSG::Edge> &edges);
     void garbage_collection();
 

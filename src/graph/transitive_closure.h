@@ -22,7 +22,7 @@ class ReachabilityMatrix
 public:
     virtual ~ReachabilityMatrix() = default;
     virtual void set_reach(uint32_t from, uint32_t to, bool is_reachable) = 0;
-    virtual const bool reach(uint32_t from, uint32_t to) const = 0;
+    virtual bool reach(uint32_t from, uint32_t to) const = 0;
     virtual const DSG::Edge *parent(uint32_t from, uint32_t to) const = 0;
     virtual void set_parent(uint32_t from, uint32_t to, const DSG::Edge *parent) = 0;
     virtual size_t size() const = 0;
@@ -33,7 +33,7 @@ class StandardMatrix : public ReachabilityMatrix
 {
 public:
     StandardMatrix(size_t n);
-    const bool reach(uint32_t from, uint32_t to) const override;
+    bool reach(uint32_t from, uint32_t to) const override;
     void set_reach(uint32_t from, uint32_t to, bool is_reachable) override;
     const DSG::Edge *parent(uint32_t from, uint32_t to) const override;
     void set_parent(uint32_t from, uint32_t to, const DSG::Edge *parent) override;
@@ -50,7 +50,7 @@ class HashMatrix : public ReachabilityMatrix
 {
 public:
     HashMatrix(size_t n);
-    const bool reach(uint32_t from, uint32_t to) const override;
+    bool reach(uint32_t from, uint32_t to) const override;
     void set_reach(uint32_t from, uint32_t to, bool is_reachable) override;
     const DSG::Edge *parent(uint32_t from, uint32_t to) const override;
     void set_parent(uint32_t from, uint32_t to, const DSG::Edge *parent) override;
@@ -67,7 +67,7 @@ class CSRMatrix : public ReachabilityMatrix
 {
 public:
     CSRMatrix(const std::vector<Vertex> &vertices);
-    const bool reach(uint32_t from, uint32_t to) const override;
+    bool reach(uint32_t from, uint32_t to) const override;
     void set_reach(uint32_t from, uint32_t to, bool is_reachable) override;
     const DSG::Edge *parent(uint32_t from, uint32_t to) const override;
     void set_parent(uint32_t from, uint32_t to, const DSG::Edge *parent) override;
@@ -86,9 +86,9 @@ private:
     }
 
 private:
+    std::vector<Vertex> vertices_;
     size_t n_;
     size_t d_ = 10;
-    std::vector<Vertex> vertices_;
     std::vector<bool> reach_;
     std::vector<const DSG::Edge *> parent_;
     std::vector<uint32_t> row_ptr_;
@@ -103,7 +103,7 @@ public:
     void set_reach(uint32_t from, uint32_t to, bool is_reachable);
     void set_parent(uint32_t from, uint32_t to, const DSG::Edge *parent);
     std::vector<DSG::Edge> insert(const DSG::Edge &e);
-    void construct(const vector<DSG::Edge> &edges);
+    void construct(const std::vector<DSG::Edge> &edges);
     void backtrace(const std::vector<DSG::Edge> &edges);
 
 private:
