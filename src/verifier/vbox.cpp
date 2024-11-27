@@ -1,9 +1,11 @@
+#include <chrono>
+
 #include "vbox.h"
 #include "exception/isolation_exceptions.h"
 #include "solver/solver.h"
 using namespace std;
 
-Vbox::Vbox(const VerifyOptions &options)
+Vbox::Vbox(const VerifyOptions &options) : options_(options)
 {
     trx_manager_.load(options.log);
     int i = 0;
@@ -24,9 +26,52 @@ bool Vbox::run()
         init();
         generate_item_constraint();
         generate_pred_constraint();
+
+        size_t origin_item_cst_num = item_csts_.size();
+        size_t origin_pred_cst_num = pred_csts_.size();
+
+        auto construct_start = chrono::high_resolution_clock::now();
         construct_closure();
+        auto construct_end = chrono::high_resolution_clock::now();
+
+        auto prune_start = chrono::high_resolution_clock::now();
         prune_constraint();
+        auto prune_end = chrono::high_resolution_clock::now();
+
+        size_t pruned_item_cst_num = item_csts_.size();
+        size_t pruned_pred_cst_num = pred_csts_.size();
+
+        auto solve_start = chrono::high_resolution_clock::now();
         solve_constraint();
+        auto solve_end = chrono::high_resolution_clock::now();
+
+        auto construct_time = chrono::duration_cast<chrono::microseconds>(construct_end - construct_start).count();
+        auto prune_time = chrono::duration_cast<chrono::microseconds>(prune_end - prune_start).count();
+        auto solve_time = chrono::duration_cast<chrono::microseconds>(solve_end - solve_start).count();
+
+        // Output formatted statistics
+        std::cout << "====================== Execution Statistics ======================\n";
+        std::cout << "Initial Constraints: \n";
+        std::cout << "  Item Constraints:         " << origin_item_cst_num << "\n";
+        std::cout << "  Predicate Constraints:    " << origin_pred_cst_num << "\n";
+        std::cout << "\n";
+
+        std::cout << "Closure Construction: \n";
+        std::cout << "  Time Taken:               " << construct_time << " us\n";
+        std::cout << "\n";
+
+        std::cout << "Constraint Pruning: \n";
+        std::cout << "  Time Taken:               " << prune_time << " us\n";
+        std::cout << "  Pruned Item Constraints:  " << pruned_item_cst_num << "\n";
+        std::cout << "  Pruned Predicate Constraints: " << pruned_pred_cst_num << "\n";
+        std::cout << "\n";
+
+        std::cout << "Constraint Solving: \n";
+        std::cout << "  Time Taken:               " << solve_time << " us\n";
+        std::cout << "\n";
+
+        std::cout << "===============================================================\n";
+
         return true;
     }
     catch (exception &e)
@@ -41,19 +86,22 @@ void Vbox::solve_constraint()
     bool satisfiable = true;
     if (options_.sat == "monosat")
     {
+        cout << "monosat" << endl;
         MonoSolver solver;
         solver.formulate(n_, item_csts_, edges_);
         satisfiable = solver.check();
     }
     else if (options_.sat == "minisat")
     {
+        cout << "minisat" << endl;
         MiniSolver solver;
         solver.formulate(item_csts_, edges_);
         satisfiable = solver.check();
     }
     else if (options_.sat == "vboxsat")
     {
-        VboxSolver solver;
+        cout << "vboxsat" << endl;
+        VboxSolver solver(closure_, vertices_, item_directions_, determined_directions_);
         solver.formulate(item_csts_, pred_csts_);
         satisfiable = solver.check();
     }
@@ -119,8 +167,9 @@ void Vbox::generate_item_constraint()
 {
     for (auto &entry : installs_)
     {
+        total_item_cst_num_ += ((installs_.size() + 1) * (installs_.size()) / 2);
         uint64_t key = entry.first;
-        vector<uint32_t> &key_installers = entry.second;
+        unordered_set<uint32_t> &key_installers = entry.second;
         vector<uint32_t> active_vertices;
         unordered_map<uint32_t, uint64_t> replacement_time;
 
@@ -231,6 +280,10 @@ void Vbox::generate_pred_constraint()
             for (const auto &entry : bound_installs)
             {
                 uint64_t key = entry.first;
+                if (p->cover(key))
+                {
+                    continue;
+                }
                 const vector<pair<uint32_t, Write *>> &key_installers = entry.second;
 
                 pred_csts_.emplace_back(make_unique<PredicateConstraint>(i));
@@ -256,7 +309,7 @@ void Vbox::generate_pred_constraint()
                     // forward
                     for (size_t n = m + 1; n < key_installers.size(); ++n)
                     {
-                        uint64_t k = key_installers[n].first;
+                        uint32_t k = key_installers[n].first; // w_trx
                         Write *w_ = key_installers[n].second;
                         if (p->match(w_) && p->relevant(w_))
                         {
@@ -264,12 +317,16 @@ void Vbox::generate_pred_constraint()
                             if (vertices_[j].right() <= k) // ww
                             {
                                 direction->insert_determined(i, k); // rw
+                                assert(i != k);
+                                assert(j != k);
                                 determined_directions_[rw].insert(direction);
                             }
                             else
                             {
                                 DSG::Edge ww(j, k);
                                 direction->insert_undetermined(i, k); // rw
+                                assert(i != k);
+                                assert(j != k);
                                 undetermined_directions_[rw].insert(direction);
                                 re_derivations_[ww].insert(rw);
                             }
@@ -291,6 +348,8 @@ void Vbox::generate_pred_constraint()
                             {
                                 DSG::Edge ww(j, k);                 // ww
                                 direction->insert_undetermined(rw); // rw
+                                assert(i != k);
+                                assert(j != k);
                                 undetermined_directions_[rw].insert(direction);
                                 re_derivations_[ww].insert(rw);
                             }
@@ -298,7 +357,7 @@ void Vbox::generate_pred_constraint()
                     }
                 }
 
-                // bool left_candidate = false;
+                bool left_candidate = false;
 
                 for (uint32_t j : installs_[key])
                 {
@@ -322,18 +381,47 @@ void Vbox::generate_pred_constraint()
                             {
                                 DSG::Edge rw(i, j);
                                 direction->insert_determined(i, j); // rw
+                                assert(i != j);
                                 determined_directions_[rw].insert(direction);
                             }
                         }
-                        // left_candidate = true;
+                        left_candidate = true;
+                        if (direction->determined_edges().size() == 0)
+                        {
+                            pred_cst.remove(direction);
+                        }
                         break;
                     }
                 }
                 if (pred_cst.size() == 0)
                 { // may read from self update
-                    if (v.writes().count(key) != 0 && p->relevant(v.writes().at(key)) && !p->match(v.writes().at(key)))
-                        continue;
-                    throw SerializableException("predicate aborted reads.");
+                    // if (v.writes().count(key) != 0 && p->relevant(v.writes().at(key)) && !p->match(v.writes().at(key)))
+                    //     continue;
+                    if (!left_candidate)
+                    {
+                        PredicateDirection *direction = pred_cst.add(0); // from init
+                        for (size_t m = 0; m < key_installers.size(); ++m)
+                        {
+                            uint32_t j = key_installers[m].first;
+                            if (j == i)
+                            {
+                                continue;
+                            }
+                            Write *w = key_installers[m].second;
+                            if (p->match(w) && p->relevant(w))
+                            {
+                                DSG::Edge rw(i, j);
+                                direction->insert_determined(i, j); // rw
+                                assert(i != j);
+                                determined_directions_[rw].insert(direction);
+                            }
+                        }
+                        if (direction->determined_edges().size() == 0)
+                        {
+                            pred_csts_.pop_back();
+                        }
+                    }
+                    // throw SerializableException("predicate aborted reads.");
                 }
             }
         }
@@ -371,7 +459,7 @@ void Vbox::prune_item_first(queue<DSG::Edge> &edge_queue)
     auto item_cst_it = item_csts_.begin();
     while (item_cst_it != item_csts_.end())
     {
-        ItemConstraint *item_cst = item_cst_it.base()->get();
+        ItemConstraint *item_cst = item_cst_it->get();
         if (item_cst->removed())
         {
             item_cst_it = item_csts_.erase(item_cst_it);
@@ -391,6 +479,10 @@ void Vbox::prune_item_first(queue<DSG::Edge> &edge_queue)
             for (const DSG::Edge &e : accept_edges)
             {
                 edge_queue.push(e);
+                if (options_.collect)
+                {
+                    edges_.push_back(e);
+                }
                 item_directions_.erase(e);
             }
             for (const auto &e : reject_edges)
@@ -409,16 +501,13 @@ void Vbox::prune_item_first(queue<DSG::Edge> &edge_queue)
 
 void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
 {
-
     auto cst_it = pred_csts_.begin();
     while (cst_it != pred_csts_.end())
     {
-        PredicateConstraint *cst = cst_it.base()->get();
+        PredicateConstraint *cst = cst_it->get();
         for (auto dir_it = cst->directions().begin(); dir_it != cst->directions().end();)
         {
             PredicateDirection *direction = dir_it->second.get();
-
-            // prune undetermined edges
             for (auto e_it = direction->undetermined_edges().begin(); e_it != direction->undetermined_edges().end();)
             {
                 const DSG::Edge &edge = *e_it;
@@ -430,6 +519,7 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
 
                     direction->remove_derivation(edge);
                     re_derivations_[derivation].erase(edge);
+                    undetermined_directions_[edge].erase(direction);
                 }
                 else if (closure_->reach(edge.to(), edge.from()))
                 {
@@ -437,6 +527,7 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
 
                     direction->remove_derivation(edge);
                     re_derivations_[derivation].erase(edge);
+                    undetermined_directions_[edge].erase(direction);
                 }
                 else
                 {
@@ -446,8 +537,10 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
 
                         direction->remove_derivation(edge);
                         re_derivations_[derivation].erase(edge);
+                        undetermined_directions_[edge].erase(direction);
 
                         direction->insert_determined(edge);
+                        assert(edge.from() != edge.to());
                         determined_directions_[edge].insert(direction);
 
                         for (const DSG::Edge &derived_edge : re_derivations_[derivation])
@@ -457,6 +550,7 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
                                 direction_->remove_undetermined(derived_edge);
 
                                 direction_->insert_determined(derived_edge);
+                                assert(derived_edge.from() != derived_edge.to());
                                 determined_directions_[derived_edge].insert(direction_);
                             }
                             undetermined_directions_.erase(derived_edge);
@@ -468,6 +562,7 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
                         e_it = direction->undetermined_edges().erase(e_it);
                         direction->remove_derivation(edge);
                         re_derivations_[derivation].erase(edge);
+                        undetermined_directions_[edge].erase(direction);
 
                         for (const DSG::Edge &derived_edge : re_derivations_[derivation])
                         {
@@ -486,6 +581,7 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
                 }
             }
 
+            bool reject_dir = false;
             // prune determined edges
             for (auto e_it = direction->determined_edges().begin(); e_it != direction->determined_edges().end();)
             {
@@ -493,39 +589,42 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
                 if (closure_->reach(edge.from(), edge.to()))
                 {
                     e_it = direction->determined_edges().erase(e_it);
+                    determined_directions_[edge].erase(direction);
+                    if (determined_directions_[edge].empty())
+                    {
+                        determined_directions_.erase(edge);
+                    }
                 }
                 else if (closure_->reach(edge.to(), edge.from()))
                 {
                     e_it = direction->determined_edges().erase(e_it);
                     determined_directions_[edge].erase(direction);
-                    cst->remove(direction);
-
-                    for (const DSG::Edge &e : direction->determined_edges())
+                    if (determined_directions_[edge].empty())
                     {
-                        determined_directions_[e].erase(direction);
-                        if (determined_directions_[e].empty())
-                        {
-                            determined_directions_.erase(e);
-                        }
+                        determined_directions_.erase(edge);
                     }
-
-                    for (PredicateDirection *rej : determined_directions_.at(edge)) // 包含该边的其他方向
-                    {
-                        for (const DSG::Edge &e : rej->determined_edges())
-                        {
-                            determined_directions_[e].erase(rej);
-                            if (determined_directions_[e].empty())
-                            {
-                                determined_directions_.erase(e);
-                            }
-                        }
-                        rej->parent()->remove(rej);
-                    }
+                    reject_dir = true;
                 }
                 else
                 {
                     ++e_it;
                 }
+            }
+            if (direction->determined_edges().size() == 0 || reject_dir)
+            {
+                for (const auto &edge : direction->determined_edges())
+                {
+                    determined_directions_[edge].erase(direction);
+                    if (determined_directions_[edge].empty())
+                    {
+                        determined_directions_.erase(edge);
+                    }
+                }
+                dir_it = cst->directions().erase(dir_it);
+            }
+            else
+            {
+                ++dir_it;
             }
         }
 
@@ -539,6 +638,11 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
             for (const DSG::Edge &e : direction->determined_edges())
             {
                 edge_queue.push(e);
+                if (options_.collect)
+                {
+                    edges_.push_back(e);
+                }
+
                 determined_directions_[e].erase(direction);
                 if (determined_directions_[e].empty())
                 {
@@ -608,6 +712,10 @@ void Vbox::prune_opt()
                 for (const DSG::Edge &acc : item_dir_it->second->adversary()->edges())
                 {
                     edge_queue.push(acc);
+                    if (options_.collect)
+                    {
+                        edges_.push_back(e);
+                    }
                     item_directions_.erase(item_dir_it);
                 }
                 for (const DSG::Edge &rej : item_dir_it->second->edges())
@@ -640,6 +748,10 @@ void Vbox::prune_opt()
                         for (const DSG::Edge &e : direction->determined_edges())
                         {
                             edge_queue.push(e);
+                            if (options_.collect)
+                            {
+                                edges_.push_back(e);
+                            }
                             determined_directions_[e].erase(direction);
                             if (determined_directions_[e].empty())
                             {
@@ -682,10 +794,12 @@ void Vbox::prune_opt()
             auto pred_udir_it_r = undetermined_directions_.find(reject);
             if (pred_udir_it_r != undetermined_directions_.end())
             {
-                for (PredicateDirection *rej : pred_udir_it_r->second)
+                for (PredicateDirection *d : pred_udir_it_r->second)
                 {
-                    rej->remove_undetermined(reject);
+                    d->remove_undetermined(reject);
+                    re_derivations_[d->derivation(reject)].erase(reject);
                 }
+                undetermined_directions_.erase(reject);
             }
             auto pred_udir_it_a = undetermined_directions_.find(accept);
             if (pred_udir_it_a != undetermined_directions_.end())
@@ -694,9 +808,40 @@ void Vbox::prune_opt()
                 {
                     d->remove_undetermined(accept);
                     d->insert_determined(accept);
+                    re_derivations_[d->derivation(accept)].erase(accept);
                     determined_directions_[accept].insert(d);
                 }
                 undetermined_directions_.erase(accept);
+            }
+
+            auto re_der_it_r = re_derivations_.find(reject);
+            if (re_der_it_r != re_derivations_.end())
+            {
+                for (const DSG::Edge edge : re_derivations_.at(reject))
+                {
+                    for (PredicateDirection *d : undetermined_directions_[edge])
+                    {
+                        d->remove_undetermined(reject);
+                    }
+                    undetermined_directions_.erase(edge);
+                }
+                re_derivations_.erase(re_der_it_r);
+            }
+
+            auto re_der_it_a = re_derivations_.find(accept);
+            if (re_der_it_a != re_derivations_.end())
+            {
+                for (const DSG::Edge edge : re_derivations_.at(accept))
+                {
+                    for (PredicateDirection *d : undetermined_directions_[edge])
+                    {
+                        d->remove_undetermined(accept);
+                        d->insert_determined(accept);
+                        determined_directions_[accept].insert(d);
+                    }
+                    undetermined_directions_.erase(edge);
+                }
+                re_derivations_.erase(re_der_it_r);
             }
         }
     }
@@ -744,7 +889,7 @@ void Vbox::init()
             case OperatorType::WRITE:
             {
                 Write *write = static_cast<Write *>(op.get());
-                installs_[write->key()].push_back(i);
+                installs_[write->key()].insert(i);
                 v.set_write(write->key(), write);
             }
             break;
@@ -773,6 +918,10 @@ void Vbox::init()
             {
                 it = active_vertices.erase(it);
                 u.set_right(j);
+                if (options_.collect)
+                {
+                    edges_.emplace_back(u.index(), v.index());
+                }
             }
             else
             {

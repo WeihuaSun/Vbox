@@ -4,9 +4,11 @@
 using namespace std;
 using DSG::Edge;
 
-VboxSolver::VboxSolver()
-{
-}
+VboxSolver::VboxSolver(TransitiveClosure *closure,
+                    vector<Vertex> &vertices,
+                       unordered_map<DSG::Edge, ItemDirection *> &item_directions,
+                       unordered_map<DSG::Edge, unordered_set<PredicateDirection *>> &determined_directions)
+    : closure_(closure), vertices_(vertices), item_directions_(item_directions), determined_directions_(determined_directions) {}
 
 void VboxSolver::formulate(vector<unique_ptr<ItemConstraint>> &item_csts,
                            vector<unique_ptr<PredicateConstraint>> &pred_csts)
@@ -15,6 +17,7 @@ void VboxSolver::formulate(vector<unique_ptr<ItemConstraint>> &item_csts,
     {
         int var = newVar(true, true);
         vars_.emplace_back(cst.get(), var);
+        cst_from_var_[cst.get()] = var;
     }
 
     for (const unique_ptr<PredicateConstraint> &cst : pred_csts)
@@ -26,6 +29,7 @@ void VboxSolver::formulate(vector<unique_ptr<ItemConstraint>> &item_csts,
             int var1 = newVar(true, true); // edge set var
             tmp_vars.push_back(var1);
             vars_.emplace_back(direction, var1);
+            dir_from_var_[direction] = var1;
 
             for (const ::Edge &e : direction->undetermined_edges())
             {
@@ -82,7 +86,6 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
                 unassigned_.erase(&var);
             }
         }
-
         while (v_head_ < v_trail_.size())
         {
             ConstraintVar *var = v_trail_[v_head_++];
@@ -93,7 +96,7 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
             }
             else if (var->type() == 1)
             {
-                accept = var->direction()->determined_edges();
+                accept = var->assign() ? var->direction()->determined_edges() : accept;
             }
             else
             {
@@ -126,17 +129,19 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
                         v_trail_.push_back(&p_var);
                         unassigned_.erase(&p_var);
                     }
-
-                    auto dDIt = determined_directions_.find(reject);
-                    if (dDIt != determined_directions_.end())
+                    auto d_it = determined_directions_.find(reject);
+                    if (d_it != determined_directions_.end())
                     {
-                        unordered_set<PredicateDirection *> &directions = dDIt->second;
+                        unordered_set<PredicateDirection *> &directions = d_it->second;
                         for (PredicateDirection *direction : directions)
                         {
                             ConstraintVar p_var = vars_[dir_from_var_[direction]];
                             p_var.set_assign(false);
                             p_var.set_level(decision_level());
-                            p_var.set_reason(&(dDIt->first));
+                            p_var.set_reason(&(d_it->first));
+                            uncheckedEnqueue(Monosat::mkLit(p_var.var(), p_var.assign()));
+                            v_trail_.push_back(&p_var);
+                            unassigned_.erase(&p_var);
                         }
                     }
                 }
@@ -150,7 +155,7 @@ int VboxSolver::v_analyze(unordered_set<ConstraintVar *> &reason, vector<Constra
 {
     int back_level = 0;
     int count = 0;
-    ConstraintVar *conflict;
+    ConstraintVar *conflict = nullptr;
     learned.push_back(nullptr);
     unordered_set<ConstraintVar *> seen;
     int index = v_trail_.size() - 1;
@@ -308,10 +313,8 @@ void MiniSolver::formulate(const vector<unique_ptr<ItemConstraint>> &item_csts, 
 
     for (const ::Edge &e : edges)
     {
-
         Var var_from = getTopoOrderVar(e.from(), e.to());
-        Var var_to = getTopoOrderVar(e.from(), e.to());
-
+        Var var_to = getTopoOrderVar(e.to(), e.from());
         sat_solver_->addClause(mkLit(var_from, false));
         sat_solver_->addClause(mkLit(var_to, true));
     }

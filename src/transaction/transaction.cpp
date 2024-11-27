@@ -36,6 +36,8 @@ Write::Write(uint32_t oid, uint64_t start, uint64_t end, uint64_t key, uint64_t 
     : Operator(oid, start, end), key_(key)
 {
     updates_[field] = value;
+    fields_.insert(field);
+    values_.insert(value);
 }
 OperatorType Write::type() const { return OperatorType::WRITE; }
 
@@ -98,14 +100,14 @@ string Abort::to_string() const
 }
 
 Predicate::Predicate(uint32_t oid, uint64_t start, uint64_t end, uint64_t field, uint32_t left_bound,
-                     uint32_t right_bound, vector<uint64_t> keys, vector<uint32_t> from_tids, vector<uint32_t> from_oids)
+                     uint32_t right_bound, unordered_set<uint64_t> keys, unordered_set<uint32_t> from_tids, unordered_set<uint32_t> from_oids)
     : Operator(oid, start, end), field_(field), keys_(keys), from_tids_(from_tids), from_oids_(from_oids), left_bound_(left_bound), right_bound_(right_bound) {}
 
 OperatorType Predicate::type() const { return OperatorType::PREDICATE; }
 
-const vector<uint64_t> &Predicate::keys() const { return keys_; }
-const vector<uint32_t> &Predicate::from_tids() const { return from_tids_; }
-const vector<uint32_t> &Predicate::from_oids() const { return from_oids_; }
+const unordered_set<uint64_t> &Predicate::keys() const { return keys_; }
+const unordered_set<uint32_t> &Predicate::from_tids() const { return from_tids_; }
+const unordered_set<uint32_t> &Predicate::from_oids() const { return from_oids_; }
 
 bool Predicate::relevant(Write *write) const
 {
@@ -114,11 +116,12 @@ bool Predicate::relevant(Write *write) const
 
 bool Predicate::match(Write *write) const
 {
-    if (relevant(write))
-    {
-        return write->updates()[field_] >= left_bound_ && write->updates()[field_] <= right_bound_;
-    }
-    return false;
+    return relevant(write) && write->updates()[field_] >= left_bound_ && write->updates()[field_] <= right_bound_;
+}
+
+bool Predicate::cover(uint64_t key) const
+{
+    return keys_.count(key) > 0;
 }
 
 string Predicate::to_string() const
@@ -193,8 +196,8 @@ bool TransactionManager::load(const string &root)
         Transaction *trx = nullptr;
 
         char opType;
-        vector<uint64_t> keys;
-        vector<uint32_t> from_oids, from_tids;
+        unordered_set<uint64_t> keys;
+        unordered_set<uint32_t> from_oids, from_tids;
 
         while (file.read(&opType, 1))
         {
@@ -275,17 +278,17 @@ bool TransactionManager::load(const string &root)
                 for (size_t i = 0; i < size; ++i)
                 {
                     file.read(reinterpret_cast<char *>(&key), sizeof(key));
-                    keys.push_back(key);
+                    keys.insert(key);
                 }
                 for (size_t i = 0; i < size; ++i)
                 {
                     file.read(reinterpret_cast<char *>(&from_tid), sizeof(from_tid));
-                    from_tids.push_back(from_tid);
+                    from_tids.insert(from_tid);
                 }
                 for (size_t i = 0; i < size; ++i)
                 {
                     file.read(reinterpret_cast<char *>(&from_oid), sizeof(from_oid));
-                    from_oids.push_back(from_oid);
+                    from_oids.insert(from_oid);
                 }
                 trx->append_operator(make_unique<Predicate>(oid, start_time, end_time, read_field, left, right, keys, from_tids, from_oids));
                 break;

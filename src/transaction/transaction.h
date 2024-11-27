@@ -1,7 +1,6 @@
 #ifndef TRANSACTION_H
 #define TRANSACTION_H
 
-
 #define INIT_TID 0
 #define INIT_OID 0
 
@@ -15,7 +14,6 @@
 #include <cstdint>
 #include <unordered_map>
 #include <unordered_set>
-
 
 enum class OperatorType
 {
@@ -114,23 +112,23 @@ class Predicate : public Operator
 {
 public:
     Predicate(uint32_t oid, uint64_t start, uint64_t end, uint64_t field, uint32_t left_bound, uint32_t right_bound,
-              std::vector<uint64_t> keys, std::vector<uint32_t> from_tids, std::vector<uint32_t> from_oids);
+              std::unordered_set<uint64_t> keys, std::unordered_set<uint32_t> from_tids, std::unordered_set<uint32_t> from_oids);
 
     OperatorType type() const override;
-    const std::vector<uint64_t> &keys() const;
-    const std::vector<uint32_t> &from_tids() const;
-    const std::vector<uint32_t> &from_oids() const;
+    const std::unordered_set<uint64_t> &keys() const;
+    const std::unordered_set<uint32_t> &from_tids() const;
+    const std::unordered_set<uint32_t> &from_oids() const;
 
     bool relevant(Write *write) const;
     bool match(Write *write) const;
-
+    bool cover(uint64_t key) const;
     std::string to_string() const override;
 
 private:
     uint64_t field_;
-    std::vector<uint64_t> keys_;
-    std::vector<uint32_t> from_tids_;
-    std::vector<uint32_t> from_oids_;
+    std::unordered_set<uint64_t> keys_;
+    std::unordered_set<uint32_t> from_tids_;
+    std::unordered_set<uint32_t> from_oids_;
     uint32_t left_bound_;
     uint32_t right_bound_;
 };
@@ -176,9 +174,8 @@ public:
     TransactionManager();
     ~TransactionManager() = default;
     const std::vector<std::unique_ptr<Transaction>> &transactions() const;
-    std::unique_ptr<Transaction> init_transaction() ;
+    std::unique_ptr<Transaction> init_transaction();
     bool load(const std::string &root);
-    
 
 private:
     std::vector<std::unique_ptr<Transaction>> trxs_;

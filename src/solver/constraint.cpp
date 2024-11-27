@@ -101,12 +101,16 @@ PredicateDirection *PredicateConstraint::add(uint32_t v)
 {
     size_++;
     directions_[v] = std::make_unique<PredicateDirection>(v, this);
-    directions_[v]->insert_determined(v, u_); // determined write dependency
+    if (v != 0)
+    {
+        directions_[v]->insert_determined(v, u_); // determined write dependency
+    }
     return directions_[v].get();
 }
 void PredicateConstraint::remove(PredicateDirection *d)
 {
     directions_.erase(d->v());
+    size_--;
 }
 
 size_t PredicateConstraint::size() const

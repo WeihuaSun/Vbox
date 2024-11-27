@@ -138,49 +138,50 @@ vector<const ::Edge *> TransitiveClosure::path(uint32_t from, uint32_t to) const
 
 vector<Edge> TransitiveClosure::insert(const Edge &e)
 {
-    vector<Edge> r;
-    switch (options_.update_t)
+
+    if (options_.update == "warshall")
     {
-    case Updater::U_WARSHALL:
         return warshall(e);
-    case Updater::U_ITALINO:
-        return italino(e);
-    case Updater::U_ITALINO_OPT:
-        return italino_opt(e);
-    default:
-        break;
     }
+    else if (options_.update == "italino")
+    {
+        return italino(e);
+    }
+    else if (options_.update == "italino_opt")
+    {
+        return italino_opt(e);
+    }
+    vector<Edge> r;
     return r;
 }
 
 void TransitiveClosure::construct(const vector<::Edge> &edges)
 {
-    cout<<int(options_.construct_t)<<endl;
-    switch (options_.construct_t)
+    if (options_.construct == "warshall")
     {
-    case Constructor::C_WARSHALL:
         warshall(edges);
-        break;
-    case Constructor::C_ITALINO:
+    }
+    else if (options_.construct == "italino")
+    {
         italino(edges);
-        break;
-    case Constructor::C_ITALINO_OPT:
+    }
+    else if (options_.construct == "italino_opt")
+    {
         italino_opt(edges);
-        break;
-    case Constructor::C_PURDOM:
+    }
+    else if (options_.construct == "prudom")
+    {
         prudom(edges);
-        break;
-    case Constructor::C_PURDOM_OPT:
+    }
+    else if (options_.construct == "prudom_opt")
+    {
         prudom_opt(edges);
-        break;
-    default:
-        break;
     }
 }
 
 void TransitiveClosure::warshall(const vector<Edge> &edges)
 {
-    cout<<"warshall"<<endl;
+    cout << "warshall" << endl;
     for (const Edge &e : edges)
     {
         if (!reach(e.from(), e.to()))

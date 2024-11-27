@@ -94,7 +94,7 @@ public:
     std::unordered_map<uint32_t, std::unique_ptr<PredicateDirection>> &directions();
 
 private:
-    size_t size_ = 0;
+    int size_ = 0;
     uint32_t u_; // predicate read trx
     std::unordered_map<uint32_t, std::unique_ptr<PredicateDirection>> directions_;
 };
@@ -106,7 +106,7 @@ public:
     ConstraintVar(PredicateDirection *direction, int var);
     ConstraintVar(DSG::Edge e, int var);
 
-    int type() const ;
+    int type() const;
     
     ItemConstraint *constraint() const;
     PredicateDirection *direction() const;
