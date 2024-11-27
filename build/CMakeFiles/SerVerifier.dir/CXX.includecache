@@ -54,6 +54,20 @@ string
 graph/graph.h
 ../src/solver/graph/graph.h
 
+../src/solver/solver.h
+constraint.h
+../src/solver/constraint.h
+graph/graph.h
+../src/solver/graph/graph.h
+graph/transitive_closure.h
+../src/solver/graph/transitive_closure.h
+monosat/api/Monosat.h
+-
+memory
+-
+vector
+-
+
 ../src/transaction/transaction.h
 cassert
 -
@@ -76,11 +90,11 @@ unordered_map
 unordered_set
 -
 
-/workspace/Vbox/src/graph/graph.cpp
+/home/weihua/Vbox/src/graph/graph.cpp
 graph.h
-/workspace/Vbox/src/graph/graph.h
+/home/weihua/Vbox/src/graph/graph.h
 
-/workspace/Vbox/src/graph/graph.h
+/home/weihua/Vbox/src/graph/graph.h
 unordered_set
 -
 unordered_map
@@ -88,17 +102,17 @@ unordered_map
 queue
 -
 transaction/transaction.h
-/workspace/Vbox/src/graph/transaction/transaction.h
+/home/weihua/Vbox/src/graph/transaction/transaction.h
 
-/workspace/Vbox/src/graph/transitive_closure.cpp
+/home/weihua/Vbox/src/graph/transitive_closure.cpp
 bitset
 -
 transitive_closure.h
-/workspace/Vbox/src/graph/transitive_closure.h
+/home/weihua/Vbox/src/graph/transitive_closure.h
 exception/isolation_exceptions.h
-/workspace/Vbox/src/graph/exception/isolation_exceptions.h
+/home/weihua/Vbox/src/graph/exception/isolation_exceptions.h
 
-/workspace/Vbox/src/graph/transitive_closure.h
+/home/weihua/Vbox/src/graph/transitive_closure.h
 vector
 -
 algorithm
@@ -106,9 +120,9 @@ algorithm
 stdexcept
 -
 graph.h
-/workspace/Vbox/src/graph/graph.h
+/home/weihua/Vbox/src/graph/graph.h
 options.h
-/workspace/Vbox/src/graph/options.h
+/home/weihua/Vbox/src/graph/options.h
 vector
 -
 unordered_map
@@ -116,45 +130,45 @@ unordered_map
 stdexcept
 -
 
-/workspace/Vbox/src/main.cpp
+/home/weihua/Vbox/src/main.cpp
 chrono
 -
 sys/resource.h
 -
 options.h
-/workspace/Vbox/src/options.h
+/home/weihua/Vbox/src/options.h
 verifier/vbox.h
-/workspace/Vbox/src/verifier/vbox.h
+/home/weihua/Vbox/src/verifier/vbox.h
 verifier/leopard.h
-/workspace/Vbox/src/verifier/leopard.h
+/home/weihua/Vbox/src/verifier/leopard.h
 
-/workspace/Vbox/src/options.h
+/home/weihua/Vbox/src/options.h
 iostream
 -
 string
 -
 
-/workspace/Vbox/src/solver/constraint.cpp
+/home/weihua/Vbox/src/solver/constraint.cpp
 constraint.h
-/workspace/Vbox/src/solver/constraint.h
+/home/weihua/Vbox/src/solver/constraint.h
 
-/workspace/Vbox/src/solver/constraint.h
+/home/weihua/Vbox/src/solver/constraint.h
 graph/graph.h
-/workspace/Vbox/src/solver/graph/graph.h
+/home/weihua/Vbox/src/solver/graph/graph.h
 
-/workspace/Vbox/src/solver/solver.cpp
+/home/weihua/Vbox/src/solver/solver.cpp
 solver.h
-/workspace/Vbox/src/solver/solver.h
+/home/weihua/Vbox/src/solver/solver.h
 graph/graph.h
-/workspace/Vbox/src/solver/graph/graph.h
+/home/weihua/Vbox/src/solver/graph/graph.h
 
-/workspace/Vbox/src/solver/solver.h
+/home/weihua/Vbox/src/solver/solver.h
 constraint.h
-/workspace/Vbox/src/solver/constraint.h
+/home/weihua/Vbox/src/solver/constraint.h
 graph/graph.h
-/workspace/Vbox/src/solver/graph/graph.h
+/home/weihua/Vbox/src/solver/graph/graph.h
 graph/transitive_closure.h
-/workspace/Vbox/src/solver/graph/transitive_closure.h
+/home/weihua/Vbox/src/solver/graph/transitive_closure.h
 monosat/api/Monosat.h
 -
 memory
@@ -162,9 +176,9 @@ memory
 vector
 -
 
-/workspace/Vbox/src/transaction/transaction.cpp
+/home/weihua/Vbox/src/transaction/transaction.cpp
 transaction.h
-/workspace/Vbox/src/transaction/transaction.h
+/home/weihua/Vbox/src/transaction/transaction.h
 iostream
 -
 fstream
@@ -184,7 +198,7 @@ queue
 unordered_set
 -
 
-/workspace/Vbox/src/transaction/transaction.h
+/home/weihua/Vbox/src/transaction/transaction.h
 cassert
 -
 vector
@@ -206,41 +220,43 @@ unordered_map
 unordered_set
 -
 
-/workspace/Vbox/src/verifier/leopard.cpp
+/home/weihua/Vbox/src/verifier/leopard.cpp
 leopard.h
-/workspace/Vbox/src/verifier/leopard.h
+/home/weihua/Vbox/src/verifier/leopard.h
 exception/isolation_exceptions.h
-/workspace/Vbox/src/verifier/exception/isolation_exceptions.h
+/home/weihua/Vbox/src/verifier/exception/isolation_exceptions.h
 
-/workspace/Vbox/src/verifier/leopard.h
+/home/weihua/Vbox/src/verifier/leopard.h
 set
 -
 list
 -
 transaction/transaction.h
-/workspace/Vbox/src/verifier/transaction/transaction.h
+/home/weihua/Vbox/src/verifier/transaction/transaction.h
 graph/graph.h
-/workspace/Vbox/src/verifier/graph/graph.h
+/home/weihua/Vbox/src/verifier/graph/graph.h
 options.h
-/workspace/Vbox/src/verifier/options.h
+/home/weihua/Vbox/src/verifier/options.h
 
-/workspace/Vbox/src/verifier/vbox.cpp
+/home/weihua/Vbox/src/verifier/vbox.cpp
 vbox.h
-/workspace/Vbox/src/verifier/vbox.h
+/home/weihua/Vbox/src/verifier/vbox.h
 exception/isolation_exceptions.h
-/workspace/Vbox/src/verifier/exception/isolation_exceptions.h
+/home/weihua/Vbox/src/verifier/exception/isolation_exceptions.h
+solver/solver.h
+/home/weihua/Vbox/src/verifier/solver/solver.h
 
-/workspace/Vbox/src/verifier/vbox.h
+/home/weihua/Vbox/src/verifier/vbox.h
 transaction/transaction.h
-/workspace/Vbox/src/verifier/transaction/transaction.h
+/home/weihua/Vbox/src/verifier/transaction/transaction.h
 graph/graph.h
-/workspace/Vbox/src/verifier/graph/graph.h
+/home/weihua/Vbox/src/verifier/graph/graph.h
 graph/transitive_closure.h
-/workspace/Vbox/src/verifier/graph/transitive_closure.h
+/home/weihua/Vbox/src/verifier/graph/transitive_closure.h
 options.h
-/workspace/Vbox/src/verifier/options.h
+/home/weihua/Vbox/src/verifier/options.h
 solver/constraint.h
-/workspace/Vbox/src/verifier/solver/constraint.h
+/home/weihua/Vbox/src/verifier/solver/constraint.h
 vector
 -
 unordered_map

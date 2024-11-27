@@ -4,22 +4,22 @@
 #include <iostream>
 #include <string>
 
-enum class Updater
-{
-    U_WARSHALL,
-    U_ITALINO,
-    U_ITALINO_OPT,
-};
+// enum class Updater
+// {
+//     U_WARSHALL,
+//     U_ITALINO,
+//     U_ITALINO_OPT,
+// };
 
-enum class Constructor
-{
-    C_WARSHALL,
-    C_ITALINO,
-    C_ITALINO_OPT,
-    C_PURDOM,
-    C_PURDOM_OPT,
+// enum class Constructor
+// {
+//     C_WARSHALL,
+//     C_ITALINO,
+//     C_ITALINO_OPT,
+//     C_PURDOM,
+//     C_PURDOM_OPT,
 
-};
+// };
 
 class VerifyOptions
 {
@@ -29,13 +29,13 @@ public:
     bool time = true;
     bool compact = true;
     bool merge = true;
-    std::string prune = "two_stage";
+    std::string prune = "prune_opt";
     std::string construct = "purdom_opt";
     std::string update = "italino_opt";
     std::string sat = "vboxsat";
 
-    Updater update_t;
-    Constructor construct_t;
+    // Updater update_t = Updater::U_ITALINO_OPT;
+    // Constructor construct_t = Constructor::C_PURDOM_OPT;
 
     bool collect = false;
 
@@ -58,35 +58,46 @@ public:
         if (argc > 7)
         {
             construct = argv[7];
-            if (construct == "warshall")
-            {
-                construct_t = Constructor::C_WARSHALL;
-            }
-            else if (construct == "italino")
-            {
-                construct_t = Constructor::C_ITALINO;
-            }
-            else if (construct == "italino_opt")
-            {
-                construct_t = Constructor::C_ITALINO_OPT;
-            }
-            else if (construct == "purdom")
-            {
-                construct_t = Constructor::C_PURDOM;
-            }
-            else if (construct == "purdom_opt")
-            {
-                construct_t = Constructor::C_PURDOM_OPT;
-            }
+            // if (construct == "warshall")
+            // {
+            //     construct_t = Constructor::C_WARSHALL;
+            // }
+            // else if (construct == "italino")
+            // {
+            //     construct_t = Constructor::C_ITALINO;
+            // }
+            // else if (construct == "italino_opt")
+            // {
+            //     construct_t = Constructor::C_ITALINO_OPT;
+            // }
+            // else if (construct == "purdom")
+            // {
+            //     construct_t = Constructor::C_PURDOM;
+            // }
+            // else if (construct == "purdom_opt")
+            // {
+            //     construct_t = Constructor::C_PURDOM_OPT;
+            // }
         }
 
         if (argc > 8)
             update = argv[8];
+        // if (update == "warshall")
+        // {
+        //     update_t = Updater::U_WARSHALL;
+        // }
+        // else if (update == "italino")
+        // {
+        //     update_t = Updater::U_ITALINO;
+        // }
+        // else if (update == "italino_opt")
+        // {
+        //     update_t = Updater::U_ITALINO_OPT;
+        // }
         if (argc > 9)
             sat = argv[9];
-        collect = (sat == "monosat" || "minisat" || construct == "purdom" || construct == "italino");
+        collect = (sat == "monosat" || sat == "minisat" || construct == "purdom" || construct == "italino");
     }
-
     void print() const
     {
         if (verifier == "vbox")

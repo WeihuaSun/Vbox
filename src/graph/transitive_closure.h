@@ -1,3 +1,5 @@
+#ifndef TRANSITIVE_CLOSURE_H
+#define TRANSITIVE_CLOSURE_H
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
@@ -86,9 +88,9 @@ private:
     }
 
 private:
-    std::vector<Vertex> vertices_;
+    const std::vector<Vertex>& vertices_;
     size_t n_;
-    size_t d_ = 10;
+    size_t d_ = 45;
     std::vector<bool> reach_;
     std::vector<const DSG::Edge *> parent_;
     std::vector<uint32_t> row_ptr_;
@@ -98,10 +100,12 @@ class TransitiveClosure
 {
 public:
     TransitiveClosure(const std::vector<Vertex> &vertices, const VerifyOptions &options);
+    void create();
     bool reach(uint32_t from, uint32_t to) const;
     const DSG::Edge *parent(uint32_t from, uint32_t to) const;
     void set_reach(uint32_t from, uint32_t to, bool is_reachable);
     void set_parent(uint32_t from, uint32_t to, const DSG::Edge *parent);
+    std::vector<const DSG::Edge*> path(uint32_t from, uint32_t to) const;
     std::vector<DSG::Edge> insert(const DSG::Edge &e);
     void construct(const std::vector<DSG::Edge> &edges);
     void backtrace(const std::vector<DSG::Edge> &edges);
@@ -123,18 +127,17 @@ private:
     bool dfs_opt(uint32_t i, std::vector<State> &states, std::queue<uint32_t> &rev_topo_order, uint32_t *visited, std::unordered_map<uint32_t, std::unordered_set<uint32_t>> &adjacency);
 
 private:
-    std::vector<Vertex> vertices_;
-    VerifyOptions options_;
+    const std::vector<Vertex>& vertices_;
+    const VerifyOptions& options_;
     size_t n_;
     std::unique_ptr<ReachabilityMatrix> matrix_;
-
     bool solve_;
 };
 
 class Descendant
 {
 public:
-    Descendant(uint32_t i);
+    Descendant(uint32_t i,uint32_t d);
     void merge(const Descendant &other);
     const std::vector<uint32_t> &s() const;
     uint32_t d() const;
@@ -144,3 +147,4 @@ private:
     uint32_t d_;
     std::vector<uint32_t> s_;
 };
+#endif

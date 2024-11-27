@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     VerifyOptions options;
     options.parse(argc, argv);
     options.print();
-
+    
     bool accept = false;
     auto start = chrono::high_resolution_clock::now();
     if (options.verifier == "vbox")

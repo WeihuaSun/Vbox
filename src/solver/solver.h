@@ -17,21 +17,20 @@ public:
     void formulate(std::vector<std::unique_ptr<ItemConstraint>> &item_csts, std::vector<std::unique_ptr<PredicateConstraint>> &pred_csts);
     bool check();
     void clear();
+
+private:
     void v_propagate(std::unordered_set<ConstraintVar *> &reason);
     int v_analyze(std::unordered_set<ConstraintVar *> &reason, std::vector<ConstraintVar *> &learned);
     size_t decision_level() const;
-
+    void v_backtrace(int bk_level);
     void sat_calc_reason(std::unordered_set<ConstraintVar *> &reason, Monosat::CRef conflict);
-    void vbox_calc_reason(std::unordered_set<ConstraintVar *> &reason, const DSG::Edge *reason_edge);
-
-    std::vector<ConstraintVar *> v_trail_;
-    size_t v_head_=0;
-    std::vector<std::vector<DSG::Edge>> record_;
+    void v_calc_reason(std::unordered_set<ConstraintVar *> &reason, const DSG::Edge *reason_edge);
 
 private:
     std::vector<ConstraintVar> vars_;
     std::unordered_set<ConstraintVar *> unassigned_;
-    std::unordered_map<ItemConstraint *, int> from_var_;
+    std::unordered_map<ItemConstraint *, int> cst_from_var_;
+    std::unordered_map<PredicateDirection *, int> dir_from_var_;
     std::vector<int> v_trail_lim_;
     TransitiveClosure *closure_;
     std::vector<Vertex> vertices_;
@@ -39,6 +38,9 @@ private:
     std::unordered_map<DSG::Edge, std::unordered_set<PredicateDirection *>> determined_directions_;
     std::unordered_map<DSG::Edge, std::unordered_set<PredicateDirection *>> undetermined_directions_;
     std::unordered_map<DSG::Edge, std::unordered_set<DSG::Edge>> re_derivations_;
+    std::vector<ConstraintVar *> v_trail_;
+    size_t v_head_ = 0;
+    std::vector<std::vector<DSG::Edge>> record_;
 };
 
 class MiniSolver

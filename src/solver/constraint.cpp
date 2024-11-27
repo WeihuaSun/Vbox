@@ -8,7 +8,7 @@ void ItemDirection::insert(uint32_t s, uint32_t t) { edges_.emplace(s, t); }
 
 ItemConstraint *ItemDirection::parent() const { return parent_; }
 ItemDirection *ItemDirection::adversary() const { return adversary_; }
-const unordered_set<Edge> &ItemDirection::edges() const { return edges_; }
+const unordered_set<::Edge> &ItemDirection::edges() const { return edges_; }
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -25,22 +25,22 @@ ItemConstraint ::ItemConstraint(uint32_t i, uint32_t j) : i_(i), j_(j)
 ItemDirection *ItemConstraint::alpha() const { return alpha_.get(); }
 ItemDirection *ItemConstraint::beta() const { return beta_.get(); }
 
-const std::unordered_set<Edge> &ItemConstraint::alpha_edges() const { return alpha_->edges(); }
-const std::unordered_set<Edge> &ItemConstraint::beta_edges() const { return beta_->edges(); }
+const std::unordered_set<::Edge> &ItemConstraint::alpha_edges() const { return alpha_->edges(); }
+const std::unordered_set<::Edge> &ItemConstraint::beta_edges() const { return beta_->edges(); }
 
 void ItemConstraint::insert_alpha(uint32_t s, uint32_t t) { alpha_->insert(s, t); }
 void ItemConstraint::insert_beta(uint32_t s, uint32_t t) { beta_->insert(s, t); }
 
-void ItemConstraint::insert_alpha(const std::unordered_set<Edge> &edges)
+void ItemConstraint::insert_alpha(const std::unordered_set<::Edge> &edges)
 {
-    for (const Edge &e : edges)
+    for (const ::Edge &e : edges)
     {
         alpha_->insert(e.from(), e.to());
     }
 }
-void ItemConstraint::insert_beta(const std::unordered_set<Edge> &edges)
+void ItemConstraint::insert_beta(const std::unordered_set<::Edge> &edges)
 {
-    for (const Edge &e : edges)
+    for (const ::Edge &e : edges)
     {
         beta_->insert(e.from(), e.to());
     }
@@ -58,17 +58,17 @@ void PredicateDirection::insert_determined(uint32_t s, uint32_t t)
     determined_edges_.emplace(s, t);
 }
 
-void PredicateDirection::insert_determined(const Edge &e)
+void PredicateDirection::insert_determined(const ::Edge &e)
 {
     determined_edges_.emplace(e);
 }
 
-void PredicateDirection::remove_determined(const Edge &e)
+void PredicateDirection::remove_determined(const ::Edge &e)
 {
     determined_edges_.erase(e);
 }
 
-void PredicateDirection::remove_undetermined(const Edge &e)
+void PredicateDirection::remove_undetermined(const ::Edge &e)
 {
     undetermined_edges_.erase(e);
     derivation_.erase(e);
@@ -77,22 +77,22 @@ void PredicateDirection::remove_undetermined(const Edge &e)
 void PredicateDirection::insert_undetermined(uint32_t s, uint32_t t)
 {
     undetermined_edges_.emplace(s, t);
-    derivation_[Edge(s, t)] = Edge(v_, t);
+    derivation_[::Edge(s, t)] = ::Edge(v_, t);
 }
 
-void PredicateDirection::insert_undetermined(const Edge &e)
+void PredicateDirection::insert_undetermined(const ::Edge &e)
 {
     undetermined_edges_.emplace(e.from(), e.to());
-    derivation_[e] = Edge(v_, e.to());
+    derivation_[e] = ::Edge(v_, e.to());
 }
 
 uint32_t PredicateDirection::v() const { return v_; }
 
 PredicateConstraint *PredicateDirection::parent() { return parent_; }
-std::unordered_set<Edge> &PredicateDirection::determined_edges() { return determined_edges_; }
-std::unordered_set<Edge> &PredicateDirection::undetermined_edges() { return undetermined_edges_; }
-Edge &PredicateDirection::derivation(const Edge &e) { return derivation_.at(e); }
-void PredicateDirection::remove_derivation(const Edge &e) { derivation_.erase(e); }
+std::unordered_set<::Edge> &PredicateDirection::determined_edges() { return determined_edges_; }
+std::unordered_set<::Edge> &PredicateDirection::undetermined_edges() { return undetermined_edges_; }
+::Edge &PredicateDirection::derivation(const ::Edge &e) { return derivation_.at(e); }
+void PredicateDirection::remove_derivation(const ::Edge &e) { derivation_.erase(e); }
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -119,7 +119,7 @@ unordered_map<uint32_t, unique_ptr<PredicateDirection>> &PredicateConstraint::di
 
 ConstraintVar::ConstraintVar(ItemConstraint *item_cst, int var) : type_(0), item_cst_(item_cst), var_(var) {}
 ConstraintVar::ConstraintVar(PredicateDirection *direction, int var) : type_(1), direction_(direction), var_(var) {}
-ConstraintVar::ConstraintVar(::Edge e, int var) : type_(2) { undetermined_edges_.emplace(e); }
+ConstraintVar::ConstraintVar(::Edge e, int var) : type_(2), var_(var) { undetermined_edges_.emplace(e); }
 
 int ConstraintVar::type() const { return type_; }
 ItemConstraint *ConstraintVar::constraint() const { return item_cst_; }

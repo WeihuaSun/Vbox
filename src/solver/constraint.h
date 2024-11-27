@@ -1,3 +1,6 @@
+#ifndef CONSTRAINT_H
+#define CONSTRAINT_H
+
 #include "graph/graph.h"
 
 class ItemConstraint;
@@ -40,6 +43,9 @@ public:
 
     bool removed() const;
     void set_removed();
+
+    uint32_t i() const{return i_;}
+    uint32_t j() const{return j_;}
 
 private:
     uint32_t i_, j_;
@@ -126,3 +132,5 @@ private:
     const DSG::Edge *reason_ = nullptr;
     bool assign_ = false;
 };
+
+#endif

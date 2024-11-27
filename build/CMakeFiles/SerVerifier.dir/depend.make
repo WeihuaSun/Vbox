@@ -50,6 +50,7 @@ CMakeFiles/SerVerifier.dir/src/verifier/vbox.cpp.o: ../src/graph/graph.h
 CMakeFiles/SerVerifier.dir/src/verifier/vbox.cpp.o: ../src/graph/transitive_closure.h
 CMakeFiles/SerVerifier.dir/src/verifier/vbox.cpp.o: ../src/options.h
 CMakeFiles/SerVerifier.dir/src/verifier/vbox.cpp.o: ../src/solver/constraint.h
+CMakeFiles/SerVerifier.dir/src/verifier/vbox.cpp.o: ../src/solver/solver.h
 CMakeFiles/SerVerifier.dir/src/verifier/vbox.cpp.o: ../src/transaction/transaction.h
 CMakeFiles/SerVerifier.dir/src/verifier/vbox.cpp.o: ../src/verifier/vbox.cpp
 CMakeFiles/SerVerifier.dir/src/verifier/vbox.cpp.o: ../src/verifier/vbox.h

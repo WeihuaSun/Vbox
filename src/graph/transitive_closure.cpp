@@ -6,7 +6,7 @@ using namespace std;
 using DSG::Edge;
 StandardMatrix::StandardMatrix(size_t n)
     : n_(n), reach_(n, vector<bool>(n, false)), parent_(n, vector<const Edge *>(n, nullptr)) {}
- bool StandardMatrix::reach(uint32_t from, uint32_t to) const { return reach_[from][to]; }
+bool StandardMatrix::reach(uint32_t from, uint32_t to) const { return reach_[from][to]; }
 void StandardMatrix::set_reach(uint32_t from, uint32_t to, bool is_reachable) { reach_[from][to] = is_reachable; }
 const Edge *StandardMatrix::parent(uint32_t from, uint32_t to) const { return parent_[from][to]; }
 void StandardMatrix::set_parent(uint32_t from, uint32_t to, const Edge *parent) { parent_[from][to] = parent; }
@@ -45,15 +45,24 @@ CSRMatrix::CSRMatrix(const vector<Vertex> &vertices) : vertices_(vertices), n_(v
     reach_.resize(n_ * d_, false);
     parent_.resize(n_ * d_, nullptr);
     size_t size = 0;
-    for (const Vertex &v : vertices_)
+    for (const Vertex &v : vertices)
     {
         row_ptr_[v.index()] = size;
         size += v.right() - v.left();
     }
+    assert(size <= n_ * d_);
 }
 
 bool CSRMatrix::reach(uint32_t from, uint32_t to) const
 {
+    if (vertices_[from].end() <= vertices_[to].start())
+    {
+        return true;
+    }
+    else if (vertices_[to].end() <= vertices_[from].start())
+    {
+        return false;
+    }
     int row_start = row_ptr_[from];
     int offset = to - vertices_[from].left();
     return reach_[row_start + offset];
@@ -68,6 +77,14 @@ void CSRMatrix::set_reach(uint32_t from, uint32_t to, bool is_reachable)
 
 const Edge *CSRMatrix::parent(uint32_t from, uint32_t to) const
 {
+    if (vertices_[from].end() <= vertices_[to].start())
+    {
+        return nullptr;
+    }
+    else if (vertices_[to].end() <= vertices_[from].start())
+    {
+        return nullptr;
+    }
     int row_start = row_ptr_[from];
     int offset = to - vertices_[from].left();
     return parent_[row_start + offset];
@@ -81,22 +98,43 @@ void CSRMatrix::set_parent(uint32_t from, uint32_t to, const Edge *parent)
 }
 
 size_t CSRMatrix::size() const { return n_; }
+size_t CSRMatrix::capacity() const { return sizeof(reach_) + sizeof(parent_) + sizeof(row_ptr_); }
 //////////////////////////////////////////////////////////////////////////////////////////
 TransitiveClosure::TransitiveClosure(const vector<Vertex> &vertices, const VerifyOptions &options) : vertices_(vertices), options_(options), n_(vertices.size())
 {
-    if (options.compact)
+}
+void TransitiveClosure::create()
+{
+    if (options_.compact)
     {
-        matrix_ = make_unique<CSRMatrix>(vertices);
+        matrix_ = make_unique<CSRMatrix>(vertices_);
     }
     else
     {
         matrix_ = make_unique<StandardMatrix>(n_);
     }
 }
+
 bool TransitiveClosure::reach(uint32_t from, uint32_t to) const { return matrix_->reach(from, to); }
-const ::Edge *TransitiveClosure::parent(uint32_t from, uint32_t to) const { matrix_->parent(from, to); }
+const ::Edge *TransitiveClosure::parent(uint32_t from, uint32_t to) const { return matrix_->parent(from, to); }
 void TransitiveClosure::set_reach(uint32_t from, uint32_t to, bool is_reachable) { matrix_->set_reach(from, to, is_reachable); }
 void TransitiveClosure::set_parent(uint32_t from, uint32_t to, const ::Edge *parent) { matrix_->set_parent(from, to, parent); }
+vector<const ::Edge *> TransitiveClosure::path(uint32_t from, uint32_t to) const
+{
+    vector<const ::Edge *> total_path;
+    if (from == to)
+    {
+        return total_path;
+    }
+    const ::Edge *e = parent(from, to);
+    vector<const ::Edge *> left_path = path(from, e->from());
+    vector<const ::Edge *> right_path = path(e->to(), to);
+    // Combine the left path, the current edge, and the right path
+    total_path.insert(total_path.end(), left_path.begin(), left_path.end());
+    total_path.push_back(e);
+    total_path.insert(total_path.end(), right_path.begin(), right_path.end());
+    return total_path;
+}
 
 vector<Edge> TransitiveClosure::insert(const Edge &e)
 {
@@ -117,6 +155,7 @@ vector<Edge> TransitiveClosure::insert(const Edge &e)
 
 void TransitiveClosure::construct(const vector<::Edge> &edges)
 {
+    cout<<int(options_.construct_t)<<endl;
     switch (options_.construct_t)
     {
     case Constructor::C_WARSHALL:
@@ -141,6 +180,7 @@ void TransitiveClosure::construct(const vector<::Edge> &edges)
 
 void TransitiveClosure::warshall(const vector<Edge> &edges)
 {
+    cout<<"warshall"<<endl;
     for (const Edge &e : edges)
     {
         if (!reach(e.from(), e.to()))
@@ -233,8 +273,8 @@ void TransitiveClosure::italino_opt(const vector<Edge> &edges)
 vector<Edge> TransitiveClosure::italino_opt(const Edge &e)
 {
     vector<Edge> record;
-    Vertex &s = vertices_[e.from()];
-    Vertex &t = vertices_[e.to()];
+    const Vertex &s = vertices_[e.from()];
+    const Vertex &t = vertices_[e.to()];
 
     if (!reach(e.from(), e.to()))
     {
@@ -244,7 +284,7 @@ vector<Edge> TransitiveClosure::italino_opt(const Edge &e)
         {
             if (reach(i, e.from()) && !reach(i, e.to()))
             {
-                Vertex &u = vertices_[i];
+                const Vertex &u = vertices_[i];
                 uint32_t v_left = max(max(u.left(), s.left()), t.left());
                 uint32_t v_right = min(u.right(), s.right());
                 for (uint32_t j = v_left; j < v_right; ++j)
@@ -342,6 +382,7 @@ bool TransitiveClosure::dfs(uint32_t i, vector<State> &states, queue<uint32_t> &
 
 bool TransitiveClosure::dfs_opt(uint32_t i, vector<State> &states, queue<uint32_t> &rev_topo_order, uint32_t *visited, unordered_map<uint32_t, unordered_set<uint32_t>> &adjacency)
 {
+    assert(i < n_);
     states[i] = State::VISITING;
     auto it = adjacency.find(i);
     if (it != adjacency.end())
@@ -349,6 +390,7 @@ bool TransitiveClosure::dfs_opt(uint32_t i, vector<State> &states, queue<uint32_
         unordered_set<uint32_t> &succs = it->second;
         for (uint32_t s : succs)
         {
+            assert(s < n_);
             if (states[s] == State::UNVISITED)
             {
                 if (dfs_opt(s, states, rev_topo_order, visited, adjacency))
@@ -367,6 +409,7 @@ bool TransitiveClosure::dfs_opt(uint32_t i, vector<State> &states, queue<uint32_
     {
         for (uint32_t j = vertices_[i].right(); j < *visited; ++j)
         {
+            assert(j < n_);
             if (states[j] == State::UNVISITED)
             {
                 if (dfs_opt(j, states, rev_topo_order, visited, adjacency))
@@ -381,6 +424,7 @@ bool TransitiveClosure::dfs_opt(uint32_t i, vector<State> &states, queue<uint32_
             }
         }
     }
+    assert(i < n_);
     states[i] = State::VISITED;
     rev_topo_order.push(i);
     return false;
@@ -389,7 +433,7 @@ bool TransitiveClosure::dfs_opt(uint32_t i, vector<State> &states, queue<uint32_
 void TransitiveClosure::prudom_opt(const vector<Edge> &edges)
 {
     queue<uint32_t> rev_topo_order;
-    vector<State> states(n_, State::UNVISITED);
+    vector<State> states_map(n_, State::UNVISITED);
 
     std::unordered_map<uint32_t, std::unordered_set<uint32_t>> adjacency;
 
@@ -397,20 +441,26 @@ void TransitiveClosure::prudom_opt(const vector<Edge> &edges)
     {
         adjacency[e.from()].insert(e.to());
     }
-    // topological sort
+    //  topological sort
     uint32_t visited = n_ - 1;
     for (uint32_t i = 0; i < n_; ++i)
     {
-        if (states[i] == State::UNVISITED)
+        if (states_map[i] == State::UNVISITED)
         {
-            if (dfs_opt(i, states, rev_topo_order, &visited, adjacency))
+            if (dfs_opt(i, states_map, rev_topo_order, &visited, adjacency))
             {
                 throw SerializableException("prudom_opt:cycle.");
             }
         }
     }
+    states_map.clear();
     // merge
     vector<Descendant> descendants;
+    descendants.reserve(n_);
+    for (uint32_t i = 0; i < n_; ++i)
+    {
+        descendants.emplace_back(i, vertices_[i].right());
+    }
 
     while (!rev_topo_order.empty())
     {
@@ -425,12 +475,13 @@ void TransitiveClosure::prudom_opt(const vector<Edge> &edges)
                 descendants[i].merge(descendants[s]);
             }
         }
-
-        for (uint32_t j = vertices_[i].right(); j < vertices_[vertices_[i].right()].right(); ++j)
+        if (vertices_[i].right() != n_)
         {
-            descendants[i].merge(descendants[j]);
+            for (uint32_t j = vertices_[i].right(); j < vertices_[vertices_[i].right()].right(); ++j)
+            {
+                descendants[i].merge(descendants[j]);
+            }
         }
-
         for (uint32_t j : descendants[i].s())
         {
             set_reach(i, j, true);
@@ -452,7 +503,7 @@ void TransitiveClosure::backtrace(const vector<Edge> &edges)
 }
 
 /////////////////////////////////////////////////////////////////////////
-Descendant::Descendant(uint32_t i) : i_(i) { s_.push_back(i); }
+Descendant::Descendant(uint32_t i, uint32_t d) : i_(i), d_(d) { s_.push_back(i); }
 
 void Descendant::merge(const Descendant &other)
 {

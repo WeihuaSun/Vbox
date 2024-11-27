@@ -31,7 +31,7 @@ void VboxSolver::formulate(vector<unique_ptr<ItemConstraint>> &item_csts,
             {
                 int var2 = newVar(true, true);
                 ItemDirection *derivation = item_directions_[direction->derivation(e)];
-                int var0 = from_var_[derivation->parent()];
+                int var0 = cst_from_var_[derivation->parent()];
                 bool sign0 = (derivation->parent()->alpha() == derivation);
                 //(A or B)<->C equals to (not A or not B or C) and (not C or A) and (not C or B)
                 addClause(mkLit(var2, false), mkLit(var1, true), mkLit(var0, sign0)); //(not A or not B or C)
@@ -56,7 +56,7 @@ size_t VboxSolver::decision_level() const { return v_trail_lim_.size(); }
 void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
 {
     int sat_trail_size;
-    int vbox_trail_size;
+    size_t vbox_trail_size;
     do
     {
         sat_trail_size = trail.size();
@@ -105,7 +105,7 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
                 {
                     // need assign?
                     reason.insert(var);
-                    vbox_calc_reason(reason, &e);
+                    v_calc_reason(reason, &e);
                     return;
                 }
                 const auto &changes = closure_->insert(e);
@@ -118,7 +118,7 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
                     if (item_it != item_directions_.end())
                     {
                         ItemConstraint *parent = item_it->second->parent();
-                        ConstraintVar &p_var = vars_[parent->variable_];
+                        ConstraintVar &p_var = vars_[cst_from_var_[parent]];
                         p_var.set_assign(item_it->second == parent->beta());
                         p_var.set_level(decision_level());
                         p_var.set_reason(&(item_it->first));
@@ -130,10 +130,10 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
                     auto dDIt = determined_directions_.find(reject);
                     if (dDIt != determined_directions_.end())
                     {
-                        unordered_set<PredicateDirection *> &rejectDirections = dDIt->second;
-                        for (PredicateDirection *rejectDirection : rejectDirections)
+                        unordered_set<PredicateDirection *> &directions = dDIt->second;
+                        for (PredicateDirection *direction : directions)
                         {
-                            ConstraintVar p_var = vars_[rejectDirection->var];
+                            ConstraintVar p_var = vars_[dir_from_var_[direction]];
                             p_var.set_assign(false);
                             p_var.set_level(decision_level());
                             p_var.set_reason(&(dDIt->first));
@@ -165,7 +165,7 @@ int VboxSolver::v_analyze(unordered_set<ConstraintVar *> &reason, vector<Constra
             }
             else
             {
-                vbox_calc_reason(reason, conflict->reason());
+                v_calc_reason(reason, conflict->reason());
             }
         }
         for (ConstraintVar *var : reason)
@@ -173,7 +173,7 @@ int VboxSolver::v_analyze(unordered_set<ConstraintVar *> &reason, vector<Constra
             if (seen.find(var) == seen.end())
             {
                 seen.insert(var);
-                if (var->level() == decision_level())
+                if (var->level() == (int)decision_level())
                 {
                     count++;
                 }
@@ -205,15 +205,41 @@ void VboxSolver::sat_calc_reason(unordered_set<ConstraintVar *> &reason, Monosat
     }
 }
 
-void VboxSolver::vbox_calc_reason(unordered_set<ConstraintVar *> &reason, const ::Edge *reason_edge)
+void VboxSolver::v_calc_reason(unordered_set<ConstraintVar *> &reason, const ::Edge *reason_edge)
 {
-    vector<const ::Edge *> path = closure_->parent(reason_edge->from(), reason_edge->to());
+    vector<const ::Edge *> path = closure_->path(reason_edge->from(), reason_edge->to());
     for (const ::Edge *e : path)
     {
         auto it = item_directions_.find(*e);
         if (it != item_directions_.end())
         {
-            reason.insert(&vars_[from_var_[it->second->parent()]]);
+            reason.insert(&vars_[cst_from_var_[it->second->parent()]]);
+        }
+    }
+}
+
+void VboxSolver::v_backtrace(int bk_level)
+{
+    if (decisionLevel() > bk_level)
+    {
+        for (int c = v_trail_.size() - 1; c >= this->v_trail_lim_[bk_level]; c--)
+        {
+            ConstraintVar *var = v_trail_.back();
+            var->set_assign(true);
+            var->set_level(-1);
+            var->set_reason(nullptr);
+            v_trail_.pop_back();
+            unassigned_.insert(var);
+            assigns[var->var()] = l_undef;
+            trail.pop();
+            qhead--;
+        }
+        for (int c = decisionLevel() - 1; c >= bk_level; c--)
+        {
+            v_trail_lim_.pop_back();
+            auto &record = record_.back();
+            record_.pop_back();
+            closure_->backtrace(record);
         }
     }
 }
@@ -235,24 +261,24 @@ bool VboxSolver::check()
             else
             {
                 vector<ConstraintVar *> learned;
-                int bkLevel = analyze(reason, learned);
+                int bk_level = v_analyze(reason, learned);
                 Monosat::vec<Monosat::Lit> sat_clause;
-                for (ConstraintVar *lcVar : learnedClause)
+                for (ConstraintVar *var : learned)
                 {
-                    sat_clause.push(Monosat::mkLit(lcVar->var(), lcVar->assign()));
+                    sat_clause.push(Monosat::mkLit(var->var(), var->assign()));
                 }
                 addClause(sat_clause);
-                backtrace(bkLevel);
+                v_backtrace(bk_level);
             }
         }
         else
         {
-            v_trail_lim_.push_back(gTrail.size());
+            v_trail_lim_.push_back(v_trail_.size());
             var = *unassigned_.begin();
             unassigned_.erase(unassigned_.begin());
             var->set_assign(true);
             var->set_level(decision_level());
-            gTrail.push_back(var);
+            v_trail_.push_back(var);
         }
     }
     return true;

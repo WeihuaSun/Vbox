@@ -24,6 +24,7 @@ private:
     void generate_item_constraint();
     void merge_item_constraint(ItemConstraint &cst);
     void generate_pred_constraint();
+    void construct_closure();
 
     void prune_constraint();
     void prune();
@@ -32,6 +33,7 @@ private:
     void prune_pred_first(std::queue<DSG::Edge> &edges);
     void prune_second();
     bool contain_cycle(const std::unordered_set<DSG::Edge> &edges) const;
+    void solve_constraint();
 
 private:
     TransactionManager trx_manager_;

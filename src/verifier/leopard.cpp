@@ -26,6 +26,7 @@ const Read *ReadManager::min() const
 
 Leopard::Leopard(const VerifyOptions &options)
 {
+
     trx_manager_.load(options.log);
     int i = 0;
     for (const unique_ptr<Transaction> &trx : trx_manager_.transactions())
@@ -38,72 +39,72 @@ Leopard::Leopard(const VerifyOptions &options)
 
 bool Leopard::run()
 {
-    try
+    // try
+    // {
+    vector<uint32_t> actives_vectices;
+    for (uint32_t i = 0; i < n_; ++i)
     {
-        vector<uint32_t> actives_vectices;
-        for (uint32_t i = 0; i < n_; ++i)
-        {
-            ww_edges_.clear();
-            wr_edges_.clear();
-            rw_edges_.clear();
-            garbage_.clear();
+        ww_edges_.clear();
+        wr_edges_.clear();
+        rw_edges_.clear();
+        garbage_.clear();
 
-            Vertex &v = vertices_[i];
-            Transaction *trx = v.transaction();
-            for (const unique_ptr<Operator> &op : trx->operators())
-            {
-                switch (op->type())
-                {
-                case OperatorType::READ:
-                {
-                    Read *read = static_cast<Read *>(op.get());
-                    reads_[i].push_back(read);
-                    min_reads_[read->key()].insert(read);
-                }
-                break;
-                case OperatorType::WRITE:
-                {
-                    Write *write = static_cast<Write *>(op.get());
-                    v.set_write(write->key(), write);
-                }
-                break;
-                default:
-                    break;
-                }
-            }
-
-            auto it = actives_vectices.begin();
-            while (it != actives_vectices.end())
-            {
-                Vertex &u = vertices_[*it];
-                if (u.end() <= v.start())
-                {
-                    it = actives_vectices.erase(it);
-                    consistent_read(u.index());
-                }
-                else
-                {
-                    ++it;
-                }
-            }
-            actives_vectices.push_back(i);
-            sort_write(i);
-            first_updater_win(i);
-            ssi_certifier();
-            garbage_collection();
-            //v.clear();
-        }
-        for (uint32_t j : actives_vectices)
+        Vertex &v = vertices_[i];
+        Transaction *trx = v.transaction();
+        for (const unique_ptr<Operator> &op : trx->operators())
         {
-            consistent_read(j);
+            switch (op->type())
+            {
+            case OperatorType::READ:
+            {
+                Read *read = static_cast<Read *>(op.get());
+                reads_[i].push_back(read);
+                min_reads_[read->key()].insert(read);
+            }
+            break;
+            case OperatorType::WRITE:
+            {
+                Write *write = static_cast<Write *>(op.get());
+                v.set_write(write->key(), write);
+            }
+            break;
+            default:
+                break;
+            }
         }
-        return true;
+
+        auto it = actives_vectices.begin();
+        while (it != actives_vectices.end())
+        {
+            Vertex &u = vertices_[*it];
+            if (u.end() <= v.start())
+            {
+                it = actives_vectices.erase(it);
+                consistent_read(u.index());
+            }
+            else
+            {
+                ++it;
+            }
+        }
+        actives_vectices.push_back(i);
+        sort_write(i);
+        first_updater_win(i);
+        ssi_certifier();
+        garbage_collection();
+        // v.clear();
     }
-    catch (exception &e)
+    for (uint32_t j : actives_vectices)
     {
-        cout << e.what() << endl;
-        return false;
+        consistent_read(j);
     }
+    return true;
+    //}
+    // catch (exception &e)
+    // {
+    //     cout << e.what() << endl;
+    //     return false;
+    // }
 }
 
 vector<uint32_t> Leopard::candidate(Read *read, Vertex &r_trx)
@@ -140,6 +141,10 @@ vector<uint32_t> Leopard::candidate(Read *read, Vertex &r_trx)
 
 void Leopard::consistent_read(uint32_t j)
 {
+    if (reads_.count(j) == 0)
+    {
+        return;
+    }
     const vector<Read *> reads = reads_.at(j);
     for (Read *read : reads)
     {
@@ -174,7 +179,7 @@ void Leopard::sort_write(uint32_t j)
     for (auto &write : v.writes())
     {
         uint64_t key = write.first;
-        Write *v_write = write.second;
+        // Write *v_write = write.second;
 
         auto active_it = active_install_[key].begin();
         while (active_it != active_install_[key].end())
@@ -194,9 +199,12 @@ void Leopard::sort_write(uint32_t j)
                         if (*it == i)
                         {
                             auto nextIt = std::next(it);
-                            for (uint32_t k : u.reads().at(key))
+                            if (u.reads().count(key) > 0)
                             {
-                                rw_edges_.emplace_back(k, *nextIt);
+                                for (uint32_t k : u.reads().at(key))
+                                {
+                                    rw_edges_.emplace_back(k, *nextIt);
+                                }
                             }
                             version_order_[key].erase(it);
                             break;
@@ -249,7 +257,7 @@ void Leopard::first_updater_win(uint32_t j)
         while (it != version_order_[key].end())
         {
             uint32_t i = *it;
-            Vertex u = vertices_[i];
+            Vertex& u = vertices_[i];
             Write *u_write = u.writes().at(key);
 
             uint64_t v_begin_end = v_write->end();
