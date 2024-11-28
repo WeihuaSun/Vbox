@@ -10,6 +10,7 @@
 #include <vector>
 #include <unordered_map>
 #include <queue>
+#include <set>
 
 class Vbox
 {
@@ -37,9 +38,9 @@ private:
 private:
     TransactionManager trx_manager_;
     std::vector<Vertex> vertices_;
-    std::vector<DSG::Edge> edges_;
+    std::unordered_set<DSG::Edge> edges_;
     std::unordered_map<uint32_t, uint32_t> tid2index_;
-    std::unordered_map<uint64_t, std::unordered_set<uint32_t>> installs_;
+    std::unordered_map<uint64_t, std::set<uint32_t>> installs_;
     std::vector<std::unique_ptr<ItemConstraint>> item_csts_;
     std::vector<std::unique_ptr<PredicateConstraint>> pred_csts_;
 

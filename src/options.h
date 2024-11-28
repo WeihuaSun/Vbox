@@ -15,7 +15,7 @@ public:
     std::string prune = "prune_opt";
     std::string construct = "purdom_opt";
     std::string update = "italino_opt";
-    std::string sat = "monosat";
+    std::string sat = "vboxsat";
 
     bool collect = false;
 

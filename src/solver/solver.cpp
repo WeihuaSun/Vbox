@@ -5,7 +5,7 @@ using namespace std;
 using DSG::Edge;
 
 VboxSolver::VboxSolver(TransitiveClosure *closure,
-                    vector<Vertex> &vertices,
+                       vector<Vertex> &vertices,
                        unordered_map<DSG::Edge, ItemDirection *> &item_directions,
                        unordered_map<DSG::Edge, unordered_set<PredicateDirection *>> &determined_directions)
     : closure_(closure), vertices_(vertices), item_directions_(item_directions), determined_directions_(determined_directions) {}
@@ -43,7 +43,7 @@ void VboxSolver::formulate(vector<unique_ptr<ItemConstraint>> &item_csts,
         }
         // Only one of B1, B2, B3.. is assigned True
         vec<Lit> ps; //(B1 or B2 or B3...)
-        for (size_t i = 0; i < vars_.size(); ++i)
+        for (size_t i = 0; i < tmp_vars.size(); ++i)
         {
             ps.push(mkLit(tmp_vars[i], false));
             for (size_t j = i + 1; j < tmp_vars.size(); ++j)
@@ -52,6 +52,11 @@ void VboxSolver::formulate(vector<unique_ptr<ItemConstraint>> &item_csts,
             }
         }
         addClause(ps);
+    }
+
+    for (auto &cVar : vars_)
+    {
+        unassigned_.insert(&cVar);
     }
 }
 
@@ -212,10 +217,10 @@ void VboxSolver::sat_calc_reason(unordered_set<ConstraintVar *> &reason, Monosat
 
 void VboxSolver::v_calc_reason(unordered_set<ConstraintVar *> &reason, const ::Edge *reason_edge)
 {
-    vector<const ::Edge *> path = closure_->path(reason_edge->from(), reason_edge->to());
-    for (const ::Edge *e : path)
+    vector< ::Edge > path = closure_->path(reason_edge->to(), reason_edge->from());
+    for (const ::Edge e : path)
     {
-        auto it = item_directions_.find(*e);
+        auto it = item_directions_.find(e);
         if (it != item_directions_.end())
         {
             reason.insert(&vars_[cst_from_var_[it->second->parent()]]);
@@ -255,6 +260,7 @@ bool VboxSolver::check()
     unordered_set<ConstraintVar *> reason;
     while (!unassigned_.empty())
     {
+        record_.push_back(std::vector<DSG::Edge>());
         reason.clear();
         v_propagate(reason);
         if (reason.size() > 0)
@@ -291,7 +297,7 @@ bool VboxSolver::check()
 
 MiniSolver::MiniSolver() { sat_solver_ = newSolver(); }
 
-void MiniSolver::formulate(const vector<unique_ptr<ItemConstraint>> &item_csts, const vector<::Edge> &edges)
+void MiniSolver::formulate(const vector<unique_ptr<ItemConstraint>> &item_csts, const unordered_set<::Edge> &edges)
 {
     vector<Var> edge_variables;
 
@@ -359,7 +365,7 @@ MonoSolver::MonoSolver()
     graph_solver_ = newGraph(sat_solver_);
 }
 
-void MonoSolver::formulate(size_t n, const vector<unique_ptr<ItemConstraint>> &item_csts, const vector<::Edge> &edges)
+void MonoSolver::formulate(size_t n, const vector<unique_ptr<ItemConstraint>> &item_csts, const unordered_set<::Edge> &edges)
 {
     graph_solver_->newNodes(n);
 

@@ -52,7 +52,7 @@ class MiniSolver
 {
 public:
     MiniSolver();
-    void formulate(const std::vector<std::unique_ptr<ItemConstraint>> &item_csts, const std::vector<DSG::Edge> &edges);
+    void formulate(const std::vector<std::unique_ptr<ItemConstraint>> &item_csts, const std::unordered_set<DSG::Edge> &edges);
     bool check();
     void clear();
 
@@ -64,7 +64,7 @@ class MonoSolver
 {
 public:
     MonoSolver();
-    void formulate(size_t n, const std::vector<std::unique_ptr<ItemConstraint>> &item_csts, const std::vector<DSG::Edge> &edges);
+    void formulate(size_t n, const std::vector<std::unique_ptr<ItemConstraint>> &item_csts, const std::unordered_set<DSG::Edge> &edges);
     bool check();
     void clear();
 

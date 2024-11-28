@@ -6,7 +6,7 @@ uint32_t Vertex::index() const { return index_; }
 void Vertex::set_index(uint32_t index) { index_ = index; }
 
 uint32_t Vertex::left() const { return left_; }
-void Vertex::set_left(uint32_t left) { left_ = (left_ == 0) ? left : left_; }
+void Vertex::set_left(uint32_t left) { left_ = (left_ == index_) ? left : left_; }
 
 uint32_t Vertex::right() const { return right_; }
 void Vertex::set_right(uint32_t right) { right_ = (right_ == UINT32_MAX) ? right : right_; }

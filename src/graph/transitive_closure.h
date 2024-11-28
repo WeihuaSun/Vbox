@@ -88,7 +88,7 @@ private:
     }
 
 private:
-    const std::vector<Vertex>& vertices_;
+    const std::vector<Vertex> &vertices_;
     size_t n_;
     size_t d_ = 45;
     std::vector<bool> reach_;
@@ -105,30 +105,30 @@ public:
     const DSG::Edge *parent(uint32_t from, uint32_t to) const;
     void set_reach(uint32_t from, uint32_t to, bool is_reachable);
     void set_parent(uint32_t from, uint32_t to, const DSG::Edge *parent);
-    std::vector<const DSG::Edge*> path(uint32_t from, uint32_t to) const;
+    std::vector<DSG::Edge> path(uint32_t from, uint32_t to) const;
     std::vector<DSG::Edge> insert(const DSG::Edge &e);
-    void construct(const std::vector<DSG::Edge> &edges);
+    void construct(const std::unordered_set<DSG::Edge> &edges);
     void backtrace(const std::vector<DSG::Edge> &edges);
 
 private:
-    void warshall(const std::vector<DSG::Edge> &edges);
+    void warshall(const std::unordered_set<DSG::Edge> &edges);
     std::vector<DSG::Edge> warshall(const DSG::Edge &edge);
 
-    void italino(const std::vector<DSG::Edge> &edges);
+    void italino(const std::unordered_set<DSG::Edge> &edges);
     std::vector<DSG::Edge> italino(const DSG::Edge &edge);
 
-    void italino_opt(const std::vector<DSG::Edge> &edges);
+    void italino_opt(const std::unordered_set<DSG::Edge> &edges);
     std::vector<DSG::Edge> italino_opt(const DSG::Edge &edge);
 
-    void prudom(const std::vector<DSG::Edge> &edges);
-    void prudom_opt(const std::vector<DSG::Edge> &edges);
+    void prudom(const std::unordered_set<DSG::Edge> &edges);
+    void prudom_opt(const std::unordered_set<DSG::Edge> &edges);
 
     bool dfs(uint32_t i, std::vector<State> &states, std::queue<uint32_t> &rev_topo_order, std::unordered_map<uint32_t, std::unordered_set<uint32_t>> &adjacency);
     bool dfs_opt(uint32_t i, std::vector<State> &states, std::queue<uint32_t> &rev_topo_order, uint32_t *visited, std::unordered_map<uint32_t, std::unordered_set<uint32_t>> &adjacency);
 
 private:
-    const std::vector<Vertex>& vertices_;
-    const VerifyOptions& options_;
+    const std::vector<Vertex> &vertices_;
+    const VerifyOptions &options_;
     size_t n_;
     std::unique_ptr<ReachabilityMatrix> matrix_;
     bool solve_;
@@ -137,7 +137,7 @@ private:
 class Descendant
 {
 public:
-    Descendant(uint32_t i,uint32_t d);
+    Descendant(uint32_t i, uint32_t d);
     void merge(const Descendant &other);
     const std::vector<uint32_t> &s() const;
     uint32_t d() const;

@@ -119,19 +119,25 @@ bool TransitiveClosure::reach(uint32_t from, uint32_t to) const { return matrix_
 const ::Edge *TransitiveClosure::parent(uint32_t from, uint32_t to) const { return matrix_->parent(from, to); }
 void TransitiveClosure::set_reach(uint32_t from, uint32_t to, bool is_reachable) { matrix_->set_reach(from, to, is_reachable); }
 void TransitiveClosure::set_parent(uint32_t from, uint32_t to, const ::Edge *parent) { matrix_->set_parent(from, to, parent); }
-vector<const ::Edge *> TransitiveClosure::path(uint32_t from, uint32_t to) const
+vector<::Edge> TransitiveClosure::path(uint32_t from, uint32_t to) const
 {
-    vector<const ::Edge *> total_path;
+    vector<::Edge> total_path;
     if (from == to)
     {
         return total_path;
     }
     const ::Edge *e = parent(from, to);
-    vector<const ::Edge *> left_path = path(from, e->from());
-    vector<const ::Edge *> right_path = path(e->to(), to);
+    if (e == nullptr)
+    {
+        total_path.emplace_back(from, to);
+        return total_path;
+    }
+
+    vector<::Edge> left_path = path(from, e->from());
+    vector<::Edge> right_path = path(e->to(), to);
     // Combine the left path, the current edge, and the right path
     total_path.insert(total_path.end(), left_path.begin(), left_path.end());
-    total_path.push_back(e);
+    total_path.push_back(*e);
     total_path.insert(total_path.end(), right_path.begin(), right_path.end());
     return total_path;
 }
@@ -155,7 +161,7 @@ vector<Edge> TransitiveClosure::insert(const Edge &e)
     return r;
 }
 
-void TransitiveClosure::construct(const vector<::Edge> &edges)
+void TransitiveClosure::construct(const unordered_set<::Edge> &edges)
 {
     if (options_.construct == "warshall")
     {
@@ -169,17 +175,17 @@ void TransitiveClosure::construct(const vector<::Edge> &edges)
     {
         italino_opt(edges);
     }
-    else if (options_.construct == "prudom")
+    else if (options_.construct == "purdom")
     {
         prudom(edges);
     }
-    else if (options_.construct == "prudom_opt")
+    else if (options_.construct == "purdom_opt")
     {
         prudom_opt(edges);
     }
 }
 
-void TransitiveClosure::warshall(const vector<Edge> &edges)
+void TransitiveClosure::warshall(const unordered_set<Edge> &edges)
 {
     cout << "warshall" << endl;
     for (const Edge &e : edges)
@@ -255,7 +261,7 @@ vector<Edge> TransitiveClosure::italino(const Edge &e)
     return record;
 }
 
-void TransitiveClosure::italino(const vector<Edge> &edges)
+void TransitiveClosure::italino(const unordered_set<Edge> &edges)
 {
     for (const Edge &e : edges)
     {
@@ -263,7 +269,7 @@ void TransitiveClosure::italino(const vector<Edge> &edges)
     }
 }
 
-void TransitiveClosure::italino_opt(const vector<Edge> &edges)
+void TransitiveClosure::italino_opt(const unordered_set<Edge> &edges)
 {
     for (const Edge &e : edges)
     {
@@ -306,7 +312,7 @@ vector<Edge> TransitiveClosure::italino_opt(const Edge &e)
     return record;
 }
 
-void TransitiveClosure::prudom(const vector<Edge> &edges)
+void TransitiveClosure::prudom(const unordered_set<Edge> &edges)
 {
     queue<uint32_t> rev_topo_order;
     vector<State> states(n_, State::UNVISITED);
@@ -431,7 +437,7 @@ bool TransitiveClosure::dfs_opt(uint32_t i, vector<State> &states, queue<uint32_
     return false;
 }
 
-void TransitiveClosure::prudom_opt(const vector<Edge> &edges)
+void TransitiveClosure::prudom_opt(const unordered_set<Edge> &edges)
 {
     queue<uint32_t> rev_topo_order;
     vector<State> states_map(n_, State::UNVISITED);
@@ -471,16 +477,22 @@ void TransitiveClosure::prudom_opt(const vector<Edge> &edges)
         if (it != adjacency.end())
         {
             unordered_set<uint32_t> &succs = it->second;
-            for (uint32_t s : succs)
+            for (uint32_t j : succs)
             {
-                descendants[i].merge(descendants[s]);
+                if (descendants[j].s()[0] < descendants[i].d())
+                {
+                    descendants[i].merge(descendants[j]);
+                }
             }
         }
         if (vertices_[i].right() != n_)
         {
             for (uint32_t j = vertices_[i].right(); j < vertices_[vertices_[i].right()].right(); ++j)
             {
-                descendants[i].merge(descendants[j]);
+                if (descendants[j].s()[0] < descendants[i].d())
+                {
+                    descendants[i].merge(descendants[j]);
+                }
             }
         }
         for (uint32_t j : descendants[i].s())
@@ -533,7 +545,7 @@ void Descendant::merge(const Descendant &other)
                 n++;
             }
         }
-        else if (s_[m] < other.s_[m])
+        else if (s_[m] < other.s_[n])
         {
             if (s_[m] >= d_)
             {
