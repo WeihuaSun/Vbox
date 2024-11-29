@@ -5,6 +5,30 @@
 #include "solver/solver.h"
 using namespace std;
 
+void check_edges(unordered_set<DSG::Edge> &edges)
+{
+
+    unordered_map<uint32_t, unordered_set<uint32_t>> adjacency;
+    for (const DSG::Edge &e : edges)
+    {
+        adjacency[e.from()].insert(e.to());
+    }
+
+    for (auto &entry : adjacency)
+    {
+        uint32_t s = entry.first;
+        for (uint32_t t : entry.second)
+        {
+            auto it = adjacency[t].find(s);
+            if (it != adjacency[t].end())
+            {
+                cout << s << "\n"
+                     << t << endl;
+            }
+        }
+    }
+}
+
 Vbox::Vbox(const VerifyOptions &options) : options_(options)
 {
     trx_manager_.load(options.log);
@@ -27,6 +51,7 @@ bool Vbox::run()
         init();
         generate_item_constraint();
         generate_pred_constraint();
+        check_edges(edges_);
 
         size_t origin_item_cst_num = item_csts_.size();
         size_t origin_pred_cst_num = pred_csts_.size();
@@ -64,7 +89,6 @@ bool Vbox::run()
         solve_constraint();
         auto solve_end = chrono::high_resolution_clock::now();
         auto solve_time = chrono::duration_cast<chrono::microseconds>(solve_end - solve_start).count();
-
 
         std::cout << "Constraint Solving: \n";
         std::cout << "  Time Taken:               " << solve_time << " us\n";
@@ -258,211 +282,180 @@ void Vbox::generate_item_constraint()
 
 void Vbox::generate_pred_constraint()
 {
-    for (size_t i = 0; i < n_; ++i)
+    // i:write_trx_prev, j:pred_read_trx, k:write_trx_next
+    // vertex: u,v,w
+
+    for (size_t j = 0; j < n_; ++j)
     {
-        Vertex &v = vertices_[i];
+        Vertex &v = vertices_[j];
         if (v.predicates().empty())
         {
             continue;
         }
         unordered_map<uint64_t, vector<pair<uint32_t, Write *>>> bound_installs; // key->[(trx,write)]
-        for (uint32_t j = v.left(); j < v.right(); ++j)
+        for (uint32_t p = v.left(); p < v.right(); ++p)
         {
-            const auto &trx_installs = vertices_[j].writes();
+            const auto &trx_installs = vertices_[p].writes();
             for (const auto &install : trx_installs)
             {
-                bound_installs[install.first].push_back(make_pair(j, install.second));
+                bound_installs[install.first].push_back(make_pair(p, install.second));
             }
         }
-
+        UnitedPredicate u_pred;
         for (Predicate *p : v.predicates())
         {
-            for (const auto &entry : bound_installs)
+            u_pred.add(p);
+        }
+
+        for (const auto &entry : bound_installs)
+        {
+            uint64_t key = entry.first;
+            if (u_pred.cover(key))
             {
-                uint64_t key = entry.first;
-                if (p->cover(key))
+                continue;
+            }
+            const vector<pair<uint32_t, Write *>> &key_installers = entry.second;
+
+            pred_csts_.emplace_back(make_unique<PredicateConstraint>(j));
+            PredicateConstraint &pred_cst = *pred_csts_.back();
+
+            for (size_t m = 0; m < key_installers.size(); ++m)
+            {
+                uint32_t i = key_installers[m].first;
+                if (i == j)
                 {
                     continue;
                 }
-                const vector<pair<uint32_t, Write *>> &key_installers = entry.second;
+                Write *write = key_installers[m].second;
 
-                pred_csts_.emplace_back(make_unique<PredicateConstraint>(i));
-                PredicateConstraint &pred_cst = *pred_csts_.back();
-
-                for (size_t m = 0; m < key_installers.size(); ++m)
+                if (!u_pred.relevant(write) || u_pred.match(write))
                 {
-                    uint32_t j = key_installers[m].first;
-                    if (j == i)
+                    continue;
+                }
+
+                PredicateDirection *direction = pred_cst.add(i);
+                determined_directions_[DSG::Edge(i, j)].insert(direction); // wr
+
+                // forward
+                for (size_t n = m + 1; n < key_installers.size(); ++n)
+                {
+                    uint32_t k = key_installers[n].first;
+                    Write *write_ = key_installers[n].second;
+                    if (u_pred.match(write_) && u_pred.relevant(write_))
                     {
-                        continue;
-                    }
-                    Write *w = key_installers[m].second;
-
-                    if (!p->relevant(w) || p->match(w))
-                    {
-                        continue;
-                    }
-
-                    // PredicateDirection *direction = new PredicateDirection(j, &pred_cst);
-
-                    PredicateDirection *direction = pred_cst.add(j);
-                    determined_directions_[DSG::Edge(j, i)].insert(direction); // wr
-
-                    // forward
-                    for (size_t n = m + 1; n < key_installers.size(); ++n)
-                    {
-                        uint32_t k = key_installers[n].first; // w_trx
-                        Write *w_ = key_installers[n].second;
-                        if (p->match(w_) && p->relevant(w_))
+                        DSG::Edge rw(j, k);
+                        if (vertices_[i].right() <= k) // i ->ww-> k
                         {
-                            DSG::Edge rw(i, k);
-                            if (vertices_[j].right() <= k) // ww
-                            {
-                                direction->insert_determined(i, k); // rw
-                                assert(i != k);
-                                assert(j != k);
-                                determined_directions_[rw].insert(direction);
-                            }
-                            else
-                            {
-                                DSG::Edge ww(j, k);
-                                direction->insert_undetermined(i, k); // rw
-                                assert(i != k);
-                                assert(j != k);
-                                undetermined_directions_[rw].insert(direction);
-                                re_derivations_[ww].insert(rw);
-                            }
-                        }
-                    }
-                    // backward
-                    for (int n = m - 1; n >= 0; --n)
-                    {
-                        uint32_t k = key_installers[n].first;
-                        Write *w_ = key_installers[n].second;
-                        if (k < vertices_[j].left())
-                        {
-                            break;
+                            direction->insert_determined(j, k); // rw
+                            determined_directions_[rw].insert(direction);
                         }
                         else
                         {
-                            DSG::Edge rw(i, k);
-                            if (p->match(w_) && p->relevant(w_))
-                            {
-                                DSG::Edge ww(j, k);                 // ww
-                                direction->insert_undetermined(rw); // rw
-                                assert(i != k);
-                                assert(j != k);
-                                undetermined_directions_[rw].insert(direction);
-                                re_derivations_[ww].insert(rw);
-                            }
+                            DSG::Edge ww(i, k);
+                            direction->insert_undetermined(j, k); // rw
+                            undetermined_directions_[rw].insert(direction);
+                            re_derivations_[ww].insert(rw);
                         }
                     }
                 }
-
-                bool left_candidate = false;
-
-                for (uint32_t j : installs_[key])
+                // backward
+                for (int n = m - 1; n >= 0; --n)
                 {
-                    if (j >= v.left())
+                    uint32_t k = key_installers[n].first;
+                    Write *write_ = key_installers[n].second;
+                    if (k < vertices_[i].left())
                     {
                         break;
                     }
-                    Write *w = vertices_[j].writes().at(key);
-                    if (!p->match(w) && p->relevant(w))
+                    else
                     {
-                        PredicateDirection *direction = pred_cst.add(0); // from init
-                        for (size_t m = 0; m < key_installers.size(); ++m)
+                        DSG::Edge rw(j, k);
+                        if (u_pred.match(write_) && u_pred.relevant(write_))
                         {
-                            uint32_t j = key_installers[m].first;
-                            if (j == i)
-                            {
-                                continue;
-                            }
-                            Write *w = key_installers[m].second;
-                            if (p->match(w) && p->relevant(w))
-                            {
-                                DSG::Edge rw(i, j);
-                                direction->insert_determined(i, j); // rw
-                                assert(i != j);
-                                determined_directions_[rw].insert(direction);
-                            }
+                            DSG::Edge ww(i, k);                 // ww
+                            direction->insert_undetermined(rw); // rw
+                            undetermined_directions_[rw].insert(direction);
+                            re_derivations_[ww].insert(rw);
                         }
-                        left_candidate = true;
-                        if (direction->determined_edges().size() == 0)
-                        {
-                            pred_cst.remove(direction);
-                        }
-                        break;
                     }
                 }
-                if (pred_cst.size() == 0)
+            }
+            for (uint32_t i : installs_[key])
+            {
+                if (i >= v.left())
                 {
-                    pred_csts_.pop_back();
-                    if (v.writes().count(key) != 0 && p->relevant(v.writes().at(key)) && !p->match(v.writes().at(key)))
-                    {
-                        continue;
-                    }
-                    if (!left_candidate)
-                    {
-                        for (size_t m = 0; m < key_installers.size(); ++m)
-                        {
-                            uint32_t j = key_installers[m].first;
-                            if (j == i)
-                            {
-                                continue;
-                            }
-                            Write *w = key_installers[m].second;
-                            if (p->match(w) && p->relevant(w))
-                            {
-                                edges_.emplace(i, j);
-                            }
-                        }
-                    }
+                    break;
                 }
-                else if (pred_cst.size() == 1)
+                Write *write_ = vertices_[i].writes().at(key);
+                if (!u_pred.match(write_) && u_pred.relevant(write_))
                 {
-                    PredicateDirection *d = pred_cst.directions().begin()->second.get();
-                    for (const auto &e : d->determined_edges())
+                    PredicateDirection *direction = pred_cst.add(0);
+                    // determined_directions_[DSG::Edge(0, j)].insert(direction); // wr
+                    for (size_t m = 0; m < key_installers.size(); ++m)
                     {
-                        edges_.insert(e);
-                        determined_directions_[e].erase(d);
-                        if (determined_directions_[e].empty())
+                        uint32_t k = key_installers[m].first;
+                        if (k == j || vertices_[j].right() <= k)
                         {
-                            determined_directions_.erase(e);
+                            continue;
+                        }
+                        Write *write__ = key_installers[m].second;
+                        if (u_pred.match(write__) && u_pred.relevant(write__))
+                        {
+                            DSG::Edge rw(j, k);
+                            direction->insert_determined(j, k); // rw
+                            determined_directions_[rw].insert(direction);
                         }
                     }
-
-                    for (const DSG::Edge &e : d->undetermined_edges())
-                    {
-                        DSG::Edge derivation = pred_cst.directions().begin()->second->derivation(e);
-                        undetermined_directions_[e].erase(d);
-                        if (undetermined_directions_[e].empty())
-                        {
-                            undetermined_directions_.erase(e);
-                        }
-                        re_derivations_[derivation].erase(e);
-
-                        if (item_directions_.count(e) == 0)
-                        {
-                            item_directions_[e] = item_directions_[derivation];
-                            item_directions_[e]->insert(e.from(), e.to());
-                        }
-                        else // merge
-                        {
-                            for (const DSG::Edge &e_ : item_directions_[e]->edges())
-                            {
-                                item_directions_[e_] = item_directions_[derivation];
-                                item_directions_[derivation]->insert(e_.from(), e_.to());
-                            }
-                            for (const DSG::Edge &e_ : item_directions_[e]->adversary()->edges())
-                            {
-                                item_directions_[e_] = item_directions_[derivation]->adversary();
-                                item_directions_[derivation]->adversary()->insert(e_.from(), e_.to());
-                            }
-                        }
-                    }
-                    pred_csts_.pop_back();
+                    break;
                 }
+            }
+            if (pred_cst.size() == 0)
+            {
+                pred_csts_.pop_back();
+            }
+            else if (pred_cst.size() == 1)
+            {
+                PredicateDirection *d = pred_cst.directions().begin()->second.get();
+                for (const auto &e : d->determined_edges())
+                {
+                    edges_.insert(e);
+                    determined_directions_[e].erase(d);
+                    if (determined_directions_[e].empty())
+                    {
+                        determined_directions_.erase(e);
+                    }
+                }
+
+                for (const DSG::Edge &e : d->undetermined_edges())
+                {
+                    DSG::Edge derivation = pred_cst.directions().begin()->second->derivation(e);
+                    undetermined_directions_[e].erase(d);
+                    if (undetermined_directions_[e].empty())
+                    {
+                        undetermined_directions_.erase(e);
+                    }
+                    re_derivations_[derivation].erase(e);
+
+                    if (item_directions_.count(e) == 0)
+                    {
+                        item_directions_[e] = item_directions_[derivation];
+                        item_directions_[e]->insert(e.from(), e.to());
+                    }
+                    else // merge
+                    {
+                        for (const DSG::Edge &e_ : item_directions_[e]->edges())
+                        {
+                            item_directions_[e_] = item_directions_[derivation];
+                            item_directions_[derivation]->insert(e_.from(), e_.to());
+                        }
+                        for (const DSG::Edge &e_ : item_directions_[e]->adversary()->edges())
+                        {
+                            item_directions_[e_] = item_directions_[derivation]->adversary();
+                            item_directions_[derivation]->adversary()->insert(e_.from(), e_.to());
+                        }
+                    }
+                }
+                pred_csts_.pop_back();
             }
         }
     }
@@ -494,7 +487,7 @@ bool Vbox::contain_cycle(const unordered_set<DSG::Edge> &edges) const
                   });
 }
 
-void Vbox::prune_item_first(queue<DSG::Edge> &edge_queue)
+void Vbox::prune_item_first(unordered_set<DSG::Edge> &edge_queue)
 {
     auto item_cst_it = item_csts_.begin();
     while (item_cst_it != item_csts_.end())
@@ -518,7 +511,7 @@ void Vbox::prune_item_first(queue<DSG::Edge> &edge_queue)
 
             for (const DSG::Edge &e : accept_edges)
             {
-                edge_queue.push(e);
+                edge_queue.insert(e);
                 if (options_.collect)
                 {
                     edges_.insert(e);
@@ -539,7 +532,7 @@ void Vbox::prune_item_first(queue<DSG::Edge> &edge_queue)
     }
 }
 
-void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
+void Vbox::prune_pred_first(unordered_set<DSG::Edge> &edge_queue)
 {
     auto cst_it = pred_csts_.begin();
     while (cst_it != pred_csts_.end())
@@ -580,7 +573,6 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
                         undetermined_directions_[edge].erase(direction);
 
                         direction->insert_determined(edge);
-                        assert(edge.from() != edge.to());
                         determined_directions_[edge].insert(direction);
 
                         for (const DSG::Edge &derived_edge : re_derivations_[derivation])
@@ -590,7 +582,6 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
                                 direction_->remove_undetermined(derived_edge);
 
                                 direction_->insert_determined(derived_edge);
-                                assert(derived_edge.from() != derived_edge.to());
                                 determined_directions_[derived_edge].insert(direction_);
                             }
                             undetermined_directions_.erase(derived_edge);
@@ -628,29 +619,31 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
                 const DSG::Edge &edge = *e_it;
                 if (closure_->reach(edge.from(), edge.to()))
                 {
-                    e_it = direction->determined_edges().erase(e_it);
+
                     determined_directions_[edge].erase(direction);
                     if (determined_directions_[edge].empty())
                     {
                         determined_directions_.erase(edge);
                     }
+                    e_it = direction->determined_edges().erase(e_it);
                 }
                 else if (closure_->reach(edge.to(), edge.from()))
                 {
-                    e_it = direction->determined_edges().erase(e_it);
+
                     determined_directions_[edge].erase(direction);
                     if (determined_directions_[edge].empty())
                     {
                         determined_directions_.erase(edge);
                     }
                     reject_dir = true;
+                    e_it = direction->determined_edges().erase(e_it);
                 }
                 else
                 {
                     ++e_it;
                 }
             }
-            if (direction->determined_edges().size() == 0 || reject_dir)
+            if (reject_dir)
             {
                 for (const auto &edge : direction->determined_edges())
                 {
@@ -671,13 +664,14 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
         if (cst->size() == 0) // 剪枝后
         {
             throw SerializableException("prune predicate constraints error.");
+            // cst_it = pred_csts_.erase(cst_it);
         }
         else if (cst->size() == 1)
         {
             PredicateDirection *direction = cst->directions().begin()->second.get();
             for (const DSG::Edge &e : direction->determined_edges())
             {
-                edge_queue.push(e);
+                edge_queue.insert(e);
                 if (options_.collect)
                 {
                     edges_.insert(e);
@@ -728,13 +722,13 @@ void Vbox::prune_pred_first(queue<DSG::Edge> &edge_queue)
 
 void Vbox::prune_opt()
 {
-    queue<DSG::Edge> edge_queue;
+    unordered_set<DSG::Edge> edge_queue;
     prune_item_first(edge_queue);
     prune_pred_first(edge_queue);
     while (!edge_queue.empty())
     {
-        DSG::Edge e = edge_queue.front();
-        edge_queue.pop();
+        DSG::Edge e = *edge_queue.begin();
+        edge_queue.erase(e);
         if (closure_->reach(e.to(), e.from()))
         {
             throw SerializableException("prune");
@@ -750,7 +744,7 @@ void Vbox::prune_opt()
             {
                 for (const DSG::Edge &acc : item_dir_it->second->adversary()->edges())
                 {
-                    edge_queue.push(acc);
+                    edge_queue.insert(acc);
                     if (options_.collect)
                     {
                         edges_.insert(e);
@@ -776,17 +770,18 @@ void Vbox::prune_opt()
                             determined_directions_.erase(e);
                         }
                     }
-                    rej->parent()->remove(rej);
-                    if (rej->parent()->size() == 0)
+                    PredicateConstraint *parent = rej->parent();
+                    parent->remove(rej);
+                    if (parent->size() == 0)
                     {
                         throw SerializableException("prune predicate constraints error.");
                     }
-                    if (rej->parent()->size() == 1)
+                    if (parent->size() == 1)
                     {
-                        PredicateDirection *direction = rej->parent()->directions().begin()->second.get();
+                        PredicateDirection *direction = parent->directions().begin()->second.get();
                         for (const DSG::Edge &e : direction->determined_edges())
                         {
-                            edge_queue.push(e);
+                            edge_queue.insert(e);
                             if (options_.collect)
                             {
                                 edges_.insert(e);
@@ -920,6 +915,7 @@ void Vbox::init()
             {
                 Read *read = static_cast<Read *>(op.get());
                 reads.push_back(read);
+                // assert(tid2index_.count(read->from_tid())>0);
                 Vertex &from = vertices_[tid2index_[read->from_tid()]];
                 from.set_read(read->key(), i);
                 edges_.emplace(from.index(), i); // wr

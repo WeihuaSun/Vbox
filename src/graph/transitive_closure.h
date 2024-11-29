@@ -120,7 +120,7 @@ private:
     void italino_opt(const std::unordered_set<DSG::Edge> &edges);
     std::vector<DSG::Edge> italino_opt(const DSG::Edge &edge);
 
-    void prudom(const std::unordered_set<DSG::Edge> &edges);
+    void purdom(const std::unordered_set<DSG::Edge> &edges);
     void prudom_opt(const std::unordered_set<DSG::Edge> &edges);
 
     bool dfs(uint32_t i, std::vector<State> &states, std::queue<uint32_t> &rev_topo_order, std::unordered_map<uint32_t, std::unordered_set<uint32_t>> &adjacency);

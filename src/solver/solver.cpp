@@ -28,8 +28,8 @@ void VboxSolver::formulate(vector<unique_ptr<ItemConstraint>> &item_csts,
             PredicateDirection *direction = it->second.get();
             int var1 = newVar(true, true); // edge set var
             tmp_vars.push_back(var1);
+            dir_from_var_[direction] = vars_.size();
             vars_.emplace_back(direction, var1);
-            dir_from_var_[direction] = var1;
 
             for (const ::Edge &e : direction->undetermined_edges())
             {
@@ -93,6 +93,10 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
         }
         while (v_head_ < v_trail_.size())
         {
+            if (unassigned_.size() == 80917)
+            {
+                cout << "found" << endl;
+            }
             ConstraintVar *var = v_trail_[v_head_++];
             unordered_set<::Edge> accept;
             if (var->type() == 0)
@@ -111,7 +115,7 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
             {
                 if (closure_->reach(e.to(), e.from()))
                 {
-                    // need assign?
+                    cout << "conflict" << endl; // need assign?
                     reason.insert(var);
                     v_calc_reason(reason, &e);
                     return;
@@ -140,7 +144,7 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
                         unordered_set<PredicateDirection *> &directions = d_it->second;
                         for (PredicateDirection *direction : directions)
                         {
-                            ConstraintVar p_var = vars_[dir_from_var_[direction]];
+                            ConstraintVar& p_var = vars_[dir_from_var_[direction]];
                             p_var.set_assign(false);
                             p_var.set_level(decision_level());
                             p_var.set_reason(&(d_it->first));
@@ -217,7 +221,7 @@ void VboxSolver::sat_calc_reason(unordered_set<ConstraintVar *> &reason, Monosat
 
 void VboxSolver::v_calc_reason(unordered_set<ConstraintVar *> &reason, const ::Edge *reason_edge)
 {
-    vector< ::Edge > path = closure_->path(reason_edge->to(), reason_edge->from());
+    vector<::Edge> path = closure_->path(reason_edge->to(), reason_edge->from());
     for (const ::Edge e : path)
     {
         auto it = item_directions_.find(e);
@@ -230,6 +234,7 @@ void VboxSolver::v_calc_reason(unordered_set<ConstraintVar *> &reason, const ::E
 
 void VboxSolver::v_backtrace(int bk_level)
 {
+    cout << "backtrace" << endl;
     if (decisionLevel() > bk_level)
     {
         for (int c = v_trail_.size() - 1; c >= this->v_trail_lim_[bk_level]; c--)
@@ -284,12 +289,21 @@ bool VboxSolver::check()
         }
         else
         {
+            if(unassigned_.empty()){
+                return true;
+            }
             v_trail_lim_.push_back(v_trail_.size());
             var = *unassigned_.begin();
             unassigned_.erase(unassigned_.begin());
-            var->set_assign(true);
+            bool ass = true;
+            if (var->type() == 1&&var->direction()->determined_edges().size()>0)
+            {
+                 ass = var->direction()->determined_edges().begin()->from() <= var->direction()->determined_edges().begin()->to() ? true : false;
+            }
+            var->set_assign(ass);
             var->set_level(decision_level());
             v_trail_.push_back(var);
+            uncheckedEnqueue(Monosat::mkLit(var->var(), !ass));
         }
     }
     return true;

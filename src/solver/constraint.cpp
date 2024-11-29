@@ -99,7 +99,6 @@ void PredicateDirection::remove_derivation(const ::Edge &e) { derivation_.erase(
 PredicateConstraint::PredicateConstraint(uint32_t u) : u_(u) {}
 PredicateDirection *PredicateConstraint::add(uint32_t v)
 {
-    size_++;
     directions_[v] = std::make_unique<PredicateDirection>(v, this);
     if (v != 0)
     {
@@ -110,12 +109,11 @@ PredicateDirection *PredicateConstraint::add(uint32_t v)
 void PredicateConstraint::remove(PredicateDirection *d)
 {
     directions_.erase(d->v());
-    size_--;
 }
 
 size_t PredicateConstraint::size() const
 {
-    return size_;
+    return directions_.size();
 }
 unordered_map<uint32_t, unique_ptr<PredicateDirection>> &PredicateConstraint::directions() { return directions_; }
 

@@ -1,14 +1,14 @@
 #!/bin/bash
 
-LOG_DIR="/home/weihua/Vbox/data/blindw_pred_10000"
-VERIFIER="leopard"
+LOG_DIR="/home/weihua/Vbox/data/g2"
+VERIFIER="vbox"
 TIMING_ENABLED="true"
 COMPACTION_ENABLED="true"
 MERGING_ENABLED="true"
 PRUNING_STRATEGY="prune_opt"
 TC_CONSTRUCTION="purdom_opt"
 TC_UPDATE="italino_opt"
-SAT_STRATEGY="vbox"
+SAT_STRATEGY="vboxsat"
 
 
 if [ $# -gt 0 ]; then

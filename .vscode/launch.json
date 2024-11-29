@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/verifier",
-            "args": ["/home/weihua/Vbox/data/blindw_rh_10000", "vbox"],
+            "args": ["/home/weihua/Vbox/data/g2", "vbox"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

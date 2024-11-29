@@ -99,6 +99,52 @@ string Abort::to_string() const
     return oss.str();
 }
 
+void UnitedPredicate::add(Predicate *p)
+{
+    fields_.insert(p->field_);
+    keys_.insert(p->keys_.begin(), p->keys_.end());
+    bounds_[p->field_].emplace_back(p->left_bound_, p->right_bound_);
+}
+
+bool UnitedPredicate::cover(uint64_t key)
+{
+    return keys_.count(key) > 0;
+}
+
+bool UnitedPredicate::relevant(Write *write)
+{
+
+    for (const auto &f : fields_)
+    {
+        if (write->updates().count(f) > 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+bool UnitedPredicate::match(Write *write)
+{
+    for (const auto &update : write->updates())
+    {
+        uint64_t f = update.first;
+        uint64_t v = update.second;
+        if (bounds_.count(f) > 0)
+        {
+            for (const auto &bound : bounds_[f])
+            {
+                if (v >= bound.first && v <= bound.second)
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+///////////////////////////////////////////////////////////////////////
+
 Predicate::Predicate(uint32_t oid, uint64_t start, uint64_t end, uint64_t field, uint32_t left_bound,
                      uint32_t right_bound, unordered_set<uint64_t> keys, unordered_set<uint32_t> from_tids, unordered_set<uint32_t> from_oids)
     : Operator(oid, start, end), field_(field), keys_(keys), from_tids_(from_tids), from_oids_(from_oids), left_bound_(left_bound), right_bound_(right_bound) {}

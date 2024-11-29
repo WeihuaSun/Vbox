@@ -131,6 +131,24 @@ private:
     std::unordered_set<uint32_t> from_oids_;
     uint32_t left_bound_;
     uint32_t right_bound_;
+    friend class UnitedPredicate;
+};
+
+class UnitedPredicate
+{
+public:
+    UnitedPredicate() = default;
+    void add(Predicate *p);
+    bool cover(uint64_t key);
+    bool relevant(Write *write);
+    bool match(Write *write);
+
+private:
+    std::unordered_set<uint64_t> fields_;
+    std::unordered_set<uint64_t> keys_;
+    std::unordered_set<uint32_t> from_tids_;
+    std::unordered_set<uint32_t> from_oids_;
+    std::unordered_map<uint64_t, std::vector<std::pair<uint32_t, uint32_t>>> bounds_;
 };
 
 class Transaction

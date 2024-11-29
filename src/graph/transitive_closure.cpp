@@ -177,7 +177,7 @@ void TransitiveClosure::construct(const unordered_set<::Edge> &edges)
     }
     else if (options_.construct == "purdom")
     {
-        prudom(edges);
+        purdom(edges);
     }
     else if (options_.construct == "purdom_opt")
     {
@@ -190,9 +190,15 @@ void TransitiveClosure::warshall(const unordered_set<Edge> &edges)
     cout << "warshall" << endl;
     for (const Edge &e : edges)
     {
+        if(e.from() == 51 && e.to() == 60){
+            cout<<e.to()<<"+"<<e.from()<<endl;
+        }
         if (!reach(e.from(), e.to()))
         {
             set_reach(e.from(), e.to(), true);
+        }
+        if(reach(e.to(),e.from())){
+            cout<<e.to()<<"-"<<e.from()<<endl;
         }
     }
     for (size_t k = 0; k < n_; k++)
@@ -265,6 +271,9 @@ void TransitiveClosure::italino(const unordered_set<Edge> &edges)
 {
     for (const Edge &e : edges)
     {
+        if(reach(e.to(),e.from())){
+            throw SerializableException("italino:cycle");
+        }
         italino(e);
     }
 }
@@ -312,7 +321,7 @@ vector<Edge> TransitiveClosure::italino_opt(const Edge &e)
     return record;
 }
 
-void TransitiveClosure::prudom(const unordered_set<Edge> &edges)
+void TransitiveClosure::purdom(const unordered_set<Edge> &edges)
 {
     queue<uint32_t> rev_topo_order;
     vector<State> states(n_, State::UNVISITED);
@@ -320,6 +329,8 @@ void TransitiveClosure::prudom(const unordered_set<Edge> &edges)
 
     for (const Edge &e : edges)
     {
+        assert(e.from()!=e.to());
+        assert(e.from()!=0);
         adjacency[e.from()].insert(e.to());
     }
 
@@ -329,7 +340,7 @@ void TransitiveClosure::prudom(const unordered_set<Edge> &edges)
         {
             if (dfs(i, states, rev_topo_order, adjacency))
             {
-                throw SerializableException("prudom:cycle.");
+                throw SerializableException("purdom:cycle.");
             }
         }
     }

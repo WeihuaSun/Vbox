@@ -94,7 +94,6 @@ public:
     std::unordered_map<uint32_t, std::unique_ptr<PredicateDirection>> &directions();
 
 private:
-    int size_ = 0;
     uint32_t u_; // predicate read trx
     std::unordered_map<uint32_t, std::unique_ptr<PredicateDirection>> directions_;
 };

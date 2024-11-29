@@ -30,8 +30,8 @@ private:
     void prune_constraint();
     void prune();
     void prune_opt();
-    void prune_item_first(std::queue<DSG::Edge> &edges);
-    void prune_pred_first(std::queue<DSG::Edge> &edges);
+    void prune_item_first(std::unordered_set<DSG::Edge> &edges);
+    void prune_pred_first(std::unordered_set<DSG::Edge> &edges);
     bool contain_cycle(const std::unordered_set<DSG::Edge> &edges) const;
     void solve_constraint();
 
