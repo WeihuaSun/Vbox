@@ -232,7 +232,7 @@ python3 scripts/evaluate.py completeness
 ```bash
 python3 scripts/evaluate.py construct
 ```
-5. Update Efficiency Test:
+5. Update of Closure Test:
 
 ```bash
 python3 scripts/evaluate.py update
