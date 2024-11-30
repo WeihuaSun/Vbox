@@ -78,6 +78,27 @@ Before installing Vbox, ensure that you have the following dependencies installe
 ./build/SerVerifier ./data/vbox_data/blindw_pred_10000 vbox true true true prune_opt purdom+ italino_opt vboxsat
 ```
 
+# Dataset
+
+The datasets used for the experiments are stored in the following directories:
+
+## 1. `data/vbox_data`
+This directory contains the Vbox format transaction history files used in the experiments. 
+
+We implemented a log generator called **[Vgen](https://github.com/WeihuaSun/Vgen.git)** to generate transaction logs in the Vbox format. You can refer to the **Vgen** code for more details on how to generate logs for various types of transaction histories.
+
+## 2. `data/coo`
+This directory contains synthetic transaction histories generated according to the transaction anomaly definitions from [Coo: Consistency Check for Transactional Databases](https://arxiv.org/pdf/2206.14602). These histories are generated using **Vgen** to simulate various transaction anomalies. 
+
+## 3. `data/coo_origin`
+This directory contains human-readable versions of the synthetic transaction histories stored in the `data/coo` directory. 
+
+## 4. `data/ser_violation`
+This directory contains real-world transaction histories collected by **Cobra**, which include anomalies such as serializability violations. 
+
+
+
+
 # Reproducing Experimental Results
 
 This guide provides the necessary steps to reproduce the experimental results from the paper. It includes instructions for configuring **DBcop** (BE Algorithm) and **Cobra**, along with installation and environment setup.
@@ -162,6 +183,16 @@ cd ../../..
 
 ## Running the Experiment Script
 
+### Transform format+
+
+We need to transform the history in vbox format into a format usable by dbcop, so first compile the transform program.
+
+```bash
+cd ./src/transform
+cargo build
+cd ../..
+```
+
 ### Python Environment Setup
 The experiment script requires Python 3.6 and the psutil package. You can install Python 3.6 and the required package as follows:
 
@@ -214,6 +245,6 @@ python3 scripts/evaluate.py update
 python3 scripts/evaluate.py solver
 ```
 
-Note: The some evalutions may take several hours to complete. The results will be saved in the output/raw folder.
+Some evalutions may take several hours to complete. The results will be saved in the output/raw folder.
 
 Note: Ensure that all dependencies are correctly installed and environment variables are set, or you may encounter runtime errors.

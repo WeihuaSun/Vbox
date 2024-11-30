@@ -1,2 +1,8 @@
 Real Word Case                          Vbox                Cobra               Leopard             BE                  
+fauna-page                              False               False               True                False               
+yuga-disW-a                             False               False               True                False               
+cock-G2                                 False               False               True                False               
+yuga-G2-b                               False               False               True                False               
+yuga-G2-a                               False               False               True                False               
+yuga-G2-c                               False               False               True                False               
 cock-blog                               False               False               False               True                

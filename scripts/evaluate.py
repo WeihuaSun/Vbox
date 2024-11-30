@@ -688,7 +688,6 @@ def eval_efficiency(num_trxs=10000):
         csv_writer.writerow(row)    
         
 
-
 def eval_scalability(workload="blindw_wr"):
     histories = [f"{workload}_{(i+1)*10000}" for i in range(10)]
     path = raw_root / "scalability.csv"
@@ -773,7 +772,7 @@ def eval_update_closure(num_trxs=10000):
         for j, method in enumerate(methods):
             row = [method]
             for i in range(len(histories)):
-                row.append(f"{update_time[i][j]} us") 
+                row.append(f"{update_time[i][j]} s") 
             csv_writer.writerow(row)
 
 
@@ -847,7 +846,6 @@ if __name__ == "__main__":
         eval_efficiency()
     elif args.eval =="scalability":
         eval_scalability()
-        eval_completeness_real_world()
     elif args.eval == "completeness":
         eval_completeness_real_world()
         eval_completeness_coo()
