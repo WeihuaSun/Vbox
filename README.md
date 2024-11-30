@@ -1,32 +1,81 @@
 # Vbox: Efficient Black-Box Serializability Verification
 
-## Overwiew
+## Overview
 
 Vbox is an efficient framework for black-box serializability verification in database transaction histories. It aims to provide an accurate and scalable method for checking serializability without requiring access to the internal database mechanisms, using only transaction logs. 
 
-安装MonoSAT
-sudo apt update
+This repository contains the source code, installation instructions, and usage guidelines for running the framework and reproducing experimental results.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Reproducing Experimental Results](#reproducing-experimental-results)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Installation
+
+### Prerequisites
+
+Before installing Vbox, ensure that you have the following dependencies installed:
+
+- **g++ 7.5.0**
+- **CMake 3.10.2**
+- **MonoSAT** 
+
 sudo apt install zlib1g-dev
 sudo apt install libgmp-dev
 cmake .
 make
 sudo make install
 
+### Steps
 
-git clone --recurse-submodules https://github.com/DBCobra/CobraHome.git
+1. **Clone the repository:**
 
-Install Cobra
+   ```bash
+   git clone https://github.com/WeihuaSun/Vbox.git
+   cd Vbox
+   ```
+2. **Build the project:**
 
-git clone https://github.com/DBCobra/CobraVerifier.git
+   ```bash
+   mkdir build
+   cd build
+   cmake ..
+   make
+   ```
+## Usage
 
-Install dbcop
+### Command
 
-git clone -b oopsla-2019 https://github.com/WeihuaSun/dbcop.git
+   ```bash
+    ./build/SerVerifier <log> <verifier> <time> <compact> <merge> <prune> <construct> <update> <sat>
+   ```
+| Parameter   | Description                                                 | Options                                        |
+|-------------|-------------------------------------------------------------|------------------------------------------------|
+| `<log>`     | Path to the directory containing the log files.             | -                                              |
+| `<verifier>`| Type of verifier to use.                                    | `vbox`, `leopard`                              |
+| `<time>`    | Timing enabled.                                             | `true`, `false`                                |
+| `<compact>` | Compaction enabled.                                         | `true`, `false`                                |
+| `<merge>`   | Merging enabled.                                            | `true`, `false`                                |
+| `<prune>`   | Pruning strategy.                                           | `prune_opt`, `prune`                |
+| `<construct>`| TC construction strategy.                                  | `purdom+`, `warshall`, `purdom`, `italino`, `italino+` |
+| `<update>`  | TC update strategy.                                         | `italino+`, `warshall`, `italino`             |
+| `<sat>`     | SAT strategy.                                               | `vboxsat`, `monosat`, `minsat`                 |
 
+### Example
+   
+    
+```bash
+./build/SerVerifier /path/to/logs vbox true true true prune_opt purdom+ italino_opt vboxsat
+```
 
-下载dbcop源代码
+## Reproducing Experimental Results
 
-git clone -b oopsla-2019 https://github.com/WeihuaSun/dbcop.git
+## 配置DBcop(BE算法)
 
 安装cargo
 
@@ -34,11 +83,16 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 source $HOME/.cargo/env
 
-编译
-
-cd dbcop
+安装clang
 apt-get install clang
+
+安装dbcop
+
+cd baselines/dbcop
+
 cargo install --path .
 
-运行
+## 配置Cobra
+
+需要环境
 
