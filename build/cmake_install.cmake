@@ -1,4 +1,4 @@
-# Install script for directory: /home/weihua/Vbox
+# Install script for directory: /workspace/Vbox
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/weihua/Vbox/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/workspace/Vbox/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

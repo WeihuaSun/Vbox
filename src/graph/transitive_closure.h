@@ -107,7 +107,7 @@ public:
     void set_parent(uint32_t from, uint32_t to, const DSG::Edge *parent);
     std::vector<DSG::Edge> path(uint32_t from, uint32_t to) const;
     std::vector<DSG::Edge> insert(const DSG::Edge &e);
-    void construct(const std::unordered_set<DSG::Edge> &edges);
+    void construct(const std::unordered_set<DSG::Edge> &edges, const std::unordered_map<uint32_t, std::unordered_set<uint32_t>> &adjacency);
     void backtrace(const std::vector<DSG::Edge> &edges);
 
 private:
@@ -120,11 +120,11 @@ private:
     void italino_opt(const std::unordered_set<DSG::Edge> &edges);
     std::vector<DSG::Edge> italino_opt(const DSG::Edge &edge);
 
-    void purdom(const std::unordered_set<DSG::Edge> &edges);
-    void prudom_opt(const std::unordered_set<DSG::Edge> &edges);
+    void purdom(const std::unordered_map<uint32_t,  std::unordered_set<uint32_t>> &adjacency);
+    void purdom_opt(const std::unordered_map<uint32_t,  std::unordered_set<uint32_t>> &adjacency);
 
-    bool dfs(uint32_t i, std::vector<State> &states, std::queue<uint32_t> &rev_topo_order, std::unordered_map<uint32_t, std::unordered_set<uint32_t>> &adjacency);
-    bool dfs_opt(uint32_t i, std::vector<State> &states, std::queue<uint32_t> &rev_topo_order, uint32_t *visited, std::unordered_map<uint32_t, std::unordered_set<uint32_t>> &adjacency);
+    bool dfs(uint32_t i, std::vector<State> &states, std::queue<uint32_t> &rev_topo_order, const std::unordered_map<uint32_t, std::unordered_set<uint32_t>> &adjacency);
+    bool dfs_opt(uint32_t i, std::vector<State> &states, std::queue<uint32_t> &rev_topo_order,  uint32_t *visited, const std::unordered_map<uint32_t, std::unordered_set<uint32_t>> &adjacency);
 
 private:
     const std::vector<Vertex> &vertices_;

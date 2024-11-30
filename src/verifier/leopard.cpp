@@ -39,72 +39,72 @@ Leopard::Leopard(const VerifyOptions &options)
 
 bool Leopard::run()
 {
-    // try
-    // {
-    vector<uint32_t> actives_vectices;
-    for (uint32_t i = 0; i < n_; ++i)
+    try
     {
-        ww_edges_.clear();
-        wr_edges_.clear();
-        rw_edges_.clear();
-        garbage_.clear();
-
-        Vertex &v = vertices_[i];
-        Transaction *trx = v.transaction();
-        for (const unique_ptr<Operator> &op : trx->operators())
+        vector<uint32_t> actives_vectices;
+        for (uint32_t i = 0; i < n_; ++i)
         {
-            switch (op->type())
+            ww_edges_.clear();
+            wr_edges_.clear();
+            rw_edges_.clear();
+            garbage_.clear();
+
+            Vertex &v = vertices_[i];
+            Transaction *trx = v.transaction();
+            for (const unique_ptr<Operator> &op : trx->operators())
             {
-            case OperatorType::READ:
-            {
-                Read *read = static_cast<Read *>(op.get());
-                reads_[i].push_back(read);
-                min_reads_[read->key()].insert(read);
-            }
-            break;
-            case OperatorType::WRITE:
-            {
-                Write *write = static_cast<Write *>(op.get());
-                v.set_write(write->key(), write);
-            }
-            break;
-            default:
+                switch (op->type())
+                {
+                case OperatorType::READ:
+                {
+                    Read *read = static_cast<Read *>(op.get());
+                    reads_[i].push_back(read);
+                    min_reads_[read->key()].insert(read);
+                }
                 break;
+                case OperatorType::WRITE:
+                {
+                    Write *write = static_cast<Write *>(op.get());
+                    v.set_write(write->key(), write);
+                }
+                break;
+                default:
+                    break;
+                }
             }
-        }
 
-        auto it = actives_vectices.begin();
-        while (it != actives_vectices.end())
-        {
-            Vertex &u = vertices_[*it];
-            if (u.end() <= v.start())
+            auto it = actives_vectices.begin();
+            while (it != actives_vectices.end())
             {
-                it = actives_vectices.erase(it);
-                consistent_read(u.index());
+                Vertex &u = vertices_[*it];
+                if (u.end() <= v.start())
+                {
+                    it = actives_vectices.erase(it);
+                    consistent_read(u.index());
+                }
+                else
+                {
+                    ++it;
+                }
             }
-            else
-            {
-                ++it;
-            }
+            actives_vectices.push_back(i);
+            sort_write(i);
+            first_updater_win(i);
+            ssi_certifier();
+            garbage_collection();
+            // v.clear();
         }
-        actives_vectices.push_back(i);
-        sort_write(i);
-        first_updater_win(i);
-        ssi_certifier();
-        garbage_collection();
-        // v.clear();
+        for (uint32_t j : actives_vectices)
+        {
+            consistent_read(j);
+        }
+        return true;
     }
-    for (uint32_t j : actives_vectices)
+    catch (exception &e)
     {
-        consistent_read(j);
+        cout << e.what() << endl;
+        return false;
     }
-    return true;
-    //}
-    // catch (exception &e)
-    // {
-    //     cout << e.what() << endl;
-    //     return false;
-    // }
 }
 
 vector<uint32_t> Leopard::candidate(Read *read, Vertex &r_trx)
@@ -125,7 +125,7 @@ vector<uint32_t> Leopard::candidate(Read *read, Vertex &r_trx)
             }
             else
             {
-                if (w_trx.end() <= pivot->start())
+                if (w_trx.end() >= pivot->start())
                 {
                     candidates.push_back(*it);
                 }
@@ -257,7 +257,7 @@ void Leopard::first_updater_win(uint32_t j)
         while (it != version_order_[key].end())
         {
             uint32_t i = *it;
-            Vertex& u = vertices_[i];
+            Vertex &u = vertices_[i];
             Write *u_write = u.writes().at(key);
 
             uint64_t v_begin_end = v_write->end();

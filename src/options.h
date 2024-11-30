@@ -13,8 +13,8 @@ public:
     bool compact = true;
     bool merge = true;
     std::string prune = "prune_opt";
-    std::string construct = "purdom_opt";
-    std::string update = "italino_opt";
+    std::string construct = "purdom+";
+    std::string update = "italino+";
     std::string sat = "vboxsat";
 
     bool collect = false;
@@ -41,7 +41,7 @@ public:
             update = argv[8];
         if (argc > 9)
             sat = argv[9];
-        collect = (sat == "monosat" || sat == "minisat" || construct == "purdom" || construct == "italino");
+        collect = (sat == "monosat" || sat == "minisat" || construct == "purdom" || construct == "italino"||construct == "italino+");
     }
     void print() const
     {

@@ -6,5 +6,5 @@ CXX_FLAGS =  -Wall -Wextra -Wpedantic  -O3 -O3 -DNDEBUG   -std=gnu++14
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/usr/local/include/monosat -I/home/weihua/Vbox/src 
+CXX_INCLUDES = -I/usr/local/include/monosat -I/workspace/Vbox/src 
 

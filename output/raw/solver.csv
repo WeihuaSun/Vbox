@@ -1,0 +1,4 @@
+solver,blindw_wh_10000,blindw_wr_10000,blindw_rh_10000,ctwitter_10000
+vboxsat,270 us,160 us,93 us,702 us
+monosat,191145 us,367242 us,392238 us,265528 us
+minisat,75307 us,148211 us,159305 us,115855 us

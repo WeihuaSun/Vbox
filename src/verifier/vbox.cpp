@@ -5,29 +5,29 @@
 #include "solver/solver.h"
 using namespace std;
 
-void check_edges(unordered_set<DSG::Edge> &edges)
-{
+// void check_edges(unordered_set<DSG::Edge> &edges)
+// {
 
-    unordered_map<uint32_t, unordered_set<uint32_t>> adjacency;
-    for (const DSG::Edge &e : edges)
-    {
-        adjacency[e.from()].insert(e.to());
-    }
+//     unordered_map<uint32_t, unordered_set<uint32_t>> adjacency;
+//     for (const DSG::Edge &e : edges)
+//     {
+//         adjacency[e.from()].insert(e.to());
+//     }
 
-    for (auto &entry : adjacency)
-    {
-        uint32_t s = entry.first;
-        for (uint32_t t : entry.second)
-        {
-            auto it = adjacency[t].find(s);
-            if (it != adjacency[t].end())
-            {
-                cout << s << "\n"
-                     << t << endl;
-            }
-        }
-    }
-}
+//     for (auto &entry : adjacency)
+//     {
+//         uint32_t s = entry.first;
+//         for (uint32_t t : entry.second)
+//         {
+//             auto it = adjacency[t].find(s);
+//             if (it != adjacency[t].end())
+//             {
+//                 cout << s << "\n"
+//                      << t << endl;
+//             }
+//         }
+//     }
+// }
 
 Vbox::Vbox(const VerifyOptions &options) : options_(options)
 {
@@ -51,12 +51,13 @@ bool Vbox::run()
         init();
         generate_item_constraint();
         generate_pred_constraint();
-        check_edges(edges_);
+        // check_edges(edges_);
 
         size_t origin_item_cst_num = item_csts_.size();
         size_t origin_pred_cst_num = pred_csts_.size();
 
         std::cout << "Initial Constraints: \n";
+        std::cout << "Total Item Constriants      " << total_item_cst_num_ << "\n";
         std::cout << "  Item Constraints:         " << origin_item_cst_num << "\n";
         std::cout << "  Predicate Constraints:    " << origin_pred_cst_num << "\n";
         std::cout << "\n";
@@ -66,9 +67,7 @@ bool Vbox::run()
         auto construct_end = chrono::high_resolution_clock::now();
 
         auto construct_time = chrono::duration_cast<chrono::microseconds>(construct_end - construct_start).count();
-        std::cout << "Closure Construction: \n";
-        std::cout << "  Time Taken:               " << construct_time << " us\n";
-        std::cout << "\n";
+        std::cout << "Closure Construction Time Taken: " << construct_time << " us\n";
 
         auto prune_start = chrono::high_resolution_clock::now();
         prune_constraint();
@@ -79,8 +78,7 @@ bool Vbox::run()
 
         auto prune_time = chrono::duration_cast<chrono::microseconds>(prune_end - prune_start).count();
 
-        std::cout << "Constraint Pruning: \n";
-        std::cout << "  Time Taken:               " << prune_time << " us\n";
+        std::cout << "Constraint Pruning Time Taken: " << prune_time << " us\n";
         std::cout << "  Pruned Item Constraints:  " << pruned_item_cst_num << "\n";
         std::cout << "  Pruned Predicate Constraints: " << pruned_pred_cst_num << "\n";
         std::cout << "\n";
@@ -90,10 +88,7 @@ bool Vbox::run()
         auto solve_end = chrono::high_resolution_clock::now();
         auto solve_time = chrono::duration_cast<chrono::microseconds>(solve_end - solve_start).count();
 
-        std::cout << "Constraint Solving: \n";
-        std::cout << "  Time Taken:               " << solve_time << " us\n";
-        std::cout << "\n";
-
+        std::cout << "Constraint Solving Time Taken: " << solve_time << " us\n";
         std::cout << "===============================================================\n";
 
         return true;
@@ -110,21 +105,18 @@ void Vbox::solve_constraint()
     bool satisfiable = true;
     if (options_.sat == "monosat")
     {
-        cout << "monosat" << endl;
         MonoSolver solver;
         solver.formulate(n_, item_csts_, edges_);
         satisfiable = solver.check();
     }
     else if (options_.sat == "minisat")
     {
-        cout << "minisat" << endl;
         MiniSolver solver;
         solver.formulate(item_csts_, edges_);
         satisfiable = solver.check();
     }
     else if (options_.sat == "vboxsat")
     {
-        cout << "vboxsat" << endl;
         VboxSolver solver(closure_, vertices_, item_directions_, determined_directions_);
         solver.formulate(item_csts_, pred_csts_);
         satisfiable = solver.check();
@@ -138,8 +130,19 @@ void Vbox::solve_constraint()
 void Vbox::construct_closure()
 {
     closure_->create();
-    closure_->construct(edges_);
-    // edges_.clear();
+    unordered_map<uint32_t, unordered_set<uint32_t>> adjacency;
+
+    for (const DSG::Edge &e : edges_)
+    {
+        adjacency[e.from()].insert(e.to());
+    }
+
+    closure_->construct(edges_, adjacency);
+    adjacency.clear();
+    if (options_.sat == "vboxsat")
+    {
+        edges_.clear();
+    }
 }
 
 void Vbox::merge_item_constraint(ItemConstraint &cst)
@@ -189,49 +192,19 @@ void Vbox::merge_item_constraint(ItemConstraint &cst)
 
 void Vbox::generate_item_constraint()
 {
-    for (auto &entry : installs_)
+    if (!options_.time)
     {
-        total_item_cst_num_ += ((installs_.size() + 1) * (installs_.size()) / 2);
-        uint64_t key = entry.first;
-        set<uint32_t> &key_installers = entry.second;
-        vector<uint32_t> active_vertices;
-        unordered_map<uint32_t, uint64_t> replacement_time;
-
-        active_vertices.push_back(0);
-        replacement_time[0] = UINT64_MAX;
-
-        for (uint32_t i : key_installers)
+        for (auto &entry : installs_)
         {
-            Vertex &v = vertices_[i];
-            auto active_it = active_vertices.begin();
-            while (active_it != active_vertices.end())
+            uint64_t key = entry.first;
+            set<uint32_t> &key_installers = entry.second;
+            vector<uint32_t> active_vertices;
+            for (uint32_t j : key_installers)
             {
-                uint32_t j = *active_it;
-                Vertex &u = vertices_[j];
-                if (replacement_time[u.index()] <= v.start())
+                for (uint32_t i : active_vertices)
                 {
-                    active_it = active_vertices.erase(active_it);
-                }
-                else if (u.end() <= v.start()) // item-write-dependency (u -> v)
-                {
-                    ++active_it;
-                    if (u.reads().count(key) > 0)
-                    {
-                        const unordered_set<uint32_t> &read_from_u = u.reads().at(key);
-                        for (uint32_t k : read_from_u) // item-read-depends on u with respect to key
-                        {
-                            //&& i < vertices_[k].right()
-                            if (i != k)
-                            {
-                                edges_.emplace(k, i); // item-anti-dependency
-                            }
-                        }
-                    }
-                    replacement_time[u.index()] = min(replacement_time[u.index()], v.end());
-                }
-                else // overlap in time
-                {
-                    ++active_it;
+                    Vertex &u = vertices_[i];
+                    Vertex &v = vertices_[j];
                     item_csts_.emplace_back(make_unique<ItemConstraint>(j, i));
                     ItemConstraint &item_cst = *item_csts_.back();
                     //(u -> v)
@@ -273,18 +246,108 @@ void Vbox::generate_item_constraint()
                         item_directions_[e] = item_cst.beta();
                     }
                 }
+                active_vertices.push_back(j);
             }
-            replacement_time[i] = UINT64_MAX;
-            active_vertices.push_back(i);
+        }
+    }
+
+    else
+    {
+        for (auto &entry : installs_)
+        {
+            
+            uint64_t key = entry.first;
+            set<uint32_t> &key_installers = entry.second;
+            vector<uint32_t> active_vertices;
+            unordered_map<uint32_t, uint64_t> replacement_time;
+            total_item_cst_num_ += ((key_installers.size() + 1) * (key_installers.size()) / 2);
+
+            active_vertices.push_back(0);
+            replacement_time[0] = UINT64_MAX;
+
+            for (uint32_t i : key_installers)
+            {
+                Vertex &v = vertices_[i];
+                auto active_it = active_vertices.begin();
+                while (active_it != active_vertices.end())
+                {
+                    uint32_t j = *active_it;
+                    Vertex &u = vertices_[j];
+                    if (replacement_time[u.index()] <= v.start())
+                    {
+                        active_it = active_vertices.erase(active_it);
+                    }
+                    else if (u.end() <= v.start()) // item-write-dependency (u -> v)
+                    {
+                        ++active_it;
+                        if (u.reads().count(key) > 0)
+                        {
+                            const unordered_set<uint32_t> &read_from_u = u.reads().at(key);
+                            for (uint32_t k : read_from_u) // item-read-depends on u with respect to key
+                            {
+                                //&& i < vertices_[k].right()
+                                if (i != k)
+                                {
+                                    edges_.emplace(k, i); // item-anti-dependency
+                                }
+                            }
+                        }
+                        replacement_time[u.index()] = min(replacement_time[u.index()], v.end());
+                    }
+                    else // overlap in time
+                    {
+                        ++active_it;
+                        item_csts_.emplace_back(make_unique<ItemConstraint>(j, i));
+                        ItemConstraint &item_cst = *item_csts_.back();
+                        //(u -> v)
+                        if (u.reads().count(key) > 0)
+                        {
+                            const unordered_set<uint32_t> &read_from_u = u.reads().at(key);
+                            for (uint32_t k : read_from_u)
+                            {
+                                if (i != k && i < vertices_[k].right())
+                                {
+                                    item_cst.insert_alpha(k, i);
+                                }
+                            }
+                        }
+                        //(v -> u)
+                        if (v.reads().count(key) > 0)
+                        {
+                            const unordered_set<uint32_t> &read_from_v = v.reads().at(key);
+                            for (uint32_t k : read_from_v)
+                            {
+                                if (j != k && j < vertices_[k].right())
+                                {
+                                    item_cst.insert_beta(k, j);
+                                }
+                            }
+                        }
+
+                        if (options_.merge)
+                        {
+                            merge_item_constraint(item_cst);
+                        }
+
+                        for (const DSG::Edge &e : item_cst.alpha_edges())
+                        {
+                            item_directions_[e] = item_cst.alpha();
+                        }
+                        for (const DSG::Edge &e : item_cst.beta_edges())
+                        {
+                            item_directions_[e] = item_cst.beta();
+                        }
+                    }
+                }
+                replacement_time[i] = UINT64_MAX;
+                active_vertices.push_back(i);
+            }
         }
     }
 }
 
 void Vbox::generate_pred_constraint()
 {
-    // i:write_trx_prev, j:pred_read_trx, k:write_trx_next
-    // vertex: u,v,w
-
     for (size_t j = 0; j < n_; ++j)
     {
         Vertex &v = vertices_[j];
@@ -906,6 +969,7 @@ void Vbox::init()
     for (size_t i = 0; i < n_; ++i)
     {
         Vertex &v = vertices_[i];
+        //<<v.to_string()<<endl;
         Transaction *trx = v.transaction();
         for (const unique_ptr<Operator> &op : trx->operators())
         {
@@ -941,33 +1005,43 @@ void Vbox::init()
     }
     check_read(reads);
     reads.clear();
-    vector<uint32_t> active_vertices;
-    for (size_t j = 0; j < n_; ++j)
+    if (options_.time)
     {
-        Vertex &v = vertices_[j];
-        auto it = active_vertices.begin();
-        while (it != active_vertices.end())
+        unordered_map<uint32_t, uint64_t> replacement_time;
+        vector<uint32_t> active_vertices;
+        for (size_t j = 0; j < n_; ++j)
         {
-            Vertex &u = vertices_[*it];
-            if (u.end() <= v.start())
+            Vertex &v = vertices_[j];
+            auto it = active_vertices.begin();
+            while (it != active_vertices.end())
             {
-                it = active_vertices.erase(it);
-                u.set_right(j);
-                if (options_.collect)
+                Vertex &u = vertices_[*it];
+                if (replacement_time[u.index()] <= v.start())
                 {
-                    edges_.emplace(u.index(), v.index());
+                    it = active_vertices.erase(it);
+                }
+                if (u.end() <= v.start())
+                {
+                    ++it;
+                    u.set_right(j);
+                    if (options_.collect)
+                    {
+                        edges_.emplace(u.index(), v.index());
+                    }
+                    replacement_time[u.index()] = min(replacement_time[u.index()], v.end());
+                }
+                else
+                {
+                    ++it;
+                    v.set_left(u.index());
                 }
             }
-            else
-            {
-                ++it;
-                v.set_left(u.index());
-            }
+            active_vertices.push_back(j);
+            replacement_time[j] = UINT64_MAX;
         }
-        active_vertices.push_back(j);
-    }
-    for (uint32_t i : active_vertices)
-    {
-        vertices_[i].set_right(n_);
+        for (uint32_t i : active_vertices)
+        {
+            vertices_[i].set_right(n_);
+        }
     }
 }

@@ -81,7 +81,7 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
         {
             for (int i = sat_trail_size; i < trail.size(); ++i)
             {
-                Monosat::Lit p = trail[i];
+                Monosat::Lit& p = trail[i];
                 int v = var(p);
                 ConstraintVar &var = vars_[v];
                 var.set_assign(assigns[v] == l_true);
@@ -93,10 +93,6 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
         }
         while (v_head_ < v_trail_.size())
         {
-            if (unassigned_.size() == 80917)
-            {
-                cout << "found" << endl;
-            }
             ConstraintVar *var = v_trail_[v_head_++];
             unordered_set<::Edge> accept;
             if (var->type() == 0)
@@ -126,29 +122,29 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
                     ::Edge reject(changedEdge.to(), changedEdge.from());
                     record_[decision_level()].push_back(changedEdge);
 
-                    auto item_it = item_directions_.find(reject);
-                    if (item_it != item_directions_.end())
-                    {
-                        ItemConstraint *parent = item_it->second->parent();
-                        ConstraintVar &p_var = vars_[cst_from_var_[parent]];
-                        p_var.set_assign(item_it->second == parent->beta());
-                        p_var.set_level(decision_level());
-                        p_var.set_reason(&(item_it->first));
-                        uncheckedEnqueue(Monosat::mkLit(p_var.var(), p_var.assign()));
-                        v_trail_.push_back(&p_var);
-                        unassigned_.erase(&p_var);
-                    }
+                    // auto item_it = item_directions_.find(reject);
+                    // if (item_it != item_directions_.end())
+                    // {
+                    //     ItemConstraint *parent = item_it->second->parent();
+                    //     ConstraintVar &p_var = vars_[cst_from_var_[parent]];
+                    //     p_var.set_assign(item_it->second == parent->beta());
+                    //     p_var.set_level(decision_level());
+                    //     p_var.set_reason(&(item_it->first));
+                    //     uncheckedEnqueue(Monosat::mkLit(p_var.var(), p_var.assign()));
+                    //     v_trail_.push_back(&p_var);
+                    //     unassigned_.erase(&p_var);
+                    // }
                     auto d_it = determined_directions_.find(reject);
                     if (d_it != determined_directions_.end())
                     {
                         unordered_set<PredicateDirection *> &directions = d_it->second;
                         for (PredicateDirection *direction : directions)
                         {
-                            ConstraintVar& p_var = vars_[dir_from_var_[direction]];
+                            ConstraintVar &p_var = vars_[dir_from_var_[direction]];
                             p_var.set_assign(false);
                             p_var.set_level(decision_level());
                             p_var.set_reason(&(d_it->first));
-                            uncheckedEnqueue(Monosat::mkLit(p_var.var(), p_var.assign()));
+                            uncheckedEnqueue(Monosat::mkLit(p_var.var(), !p_var.assign()));
                             v_trail_.push_back(&p_var);
                             unassigned_.erase(&p_var);
                         }
@@ -162,6 +158,7 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
 
 int VboxSolver::v_analyze(unordered_set<ConstraintVar *> &reason, vector<ConstraintVar *> &learned)
 {
+    cout<<"analyse"<<endl;
     int back_level = 0;
     int count = 0;
     ConstraintVar *conflict = nullptr;
@@ -289,16 +286,17 @@ bool VboxSolver::check()
         }
         else
         {
-            if(unassigned_.empty()){
+            if (unassigned_.empty())
+            {
                 return true;
             }
             v_trail_lim_.push_back(v_trail_.size());
             var = *unassigned_.begin();
             unassigned_.erase(unassigned_.begin());
             bool ass = true;
-            if (var->type() == 1&&var->direction()->determined_edges().size()>0)
+            if (var->type() == 1 && var->direction()->determined_edges().size() > 0)
             {
-                 ass = var->direction()->determined_edges().begin()->from() <= var->direction()->determined_edges().begin()->to() ? true : false;
+                ass = var->direction()->determined_edges().begin()->from() <= var->direction()->determined_edges().begin()->to() ? true : false;
             }
             var->set_assign(ass);
             var->set_level(decision_level());

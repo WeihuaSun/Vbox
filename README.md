@@ -1,4 +1,8 @@
-# Vbox
+# Vbox: Efficient Black-Box Serializability Verification
+
+## Overwiew
+
+Vbox is an efficient framework for black-box serializability verification in database transaction histories. It aims to provide an accurate and scalable method for checking serializability without requiring access to the internal database mechanisms, using only transaction logs. 
 
 安装MonoSAT
 sudo apt update
@@ -8,6 +12,8 @@ cmake .
 make
 sudo make install
 
+
+git clone --recurse-submodules https://github.com/DBCobra/CobraHome.git
 
 Install Cobra
 
@@ -31,7 +37,8 @@ source $HOME/.cargo/env
 编译
 
 cd dbcop
-apt-install clang
+apt-get install clang
 cargo install --path .
 
 运行
+

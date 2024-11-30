@@ -1,13 +1,13 @@
 #!/bin/bash
 
-LOG_DIR="/home/weihua/Vbox/data/g2"
+LOG_DIR="/workspace/Vbox/data/vbox_data/blindw_pred_10000"
 VERIFIER="vbox"
 TIMING_ENABLED="true"
 COMPACTION_ENABLED="true"
 MERGING_ENABLED="true"
 PRUNING_STRATEGY="prune_opt"
-TC_CONSTRUCTION="purdom_opt"
-TC_UPDATE="italino_opt"
+TC_CONSTRUCTION="purdom+"
+TC_UPDATE="italino+"
 SAT_STRATEGY="vboxsat"
 
 

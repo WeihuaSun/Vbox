@@ -29,11 +29,11 @@ int main(int argc, char *argv[])
         cout << "  <compact>    Compaction enabled. Options are: true / false\n";
         cout << "  <merge>      Merging enabled. Options are: true / false\n";
         cout << "  <prune>      Pruning strategy. Options are: prune_opt / prune / no\n";
-        cout << "  <construct>  TC construction strategy. Options are: purdom_opt / warshall / purdom / italino\n";
-        cout << "  <update>     TC update strategy. Options are: italino_opt / warshall / italino\n";
+        cout << "  <construct>  TC construction strategy. Options are: purdom+ / warshall / purdom / italino / italino+ \n";
+        cout << "  <update>     TC update strategy. Options are: italino+ / warshall / italino\n";
         cout << "  <sat>        SAT strategy. Options are: vboxsat / monosat / minsat\n";
         cout << "\nExample:\n";
-        cout << "  " << argv[0] << " /path/to/logs vbox true true true prune_opt purdom_opt italino_opt vboxsat\n";
+        cout << "  " << argv[0] << " /path/to/logs vbox true true true prune_opt purdom+ italino_opt vboxsat\n";
         cout << "===============================================================\n";
         return 0;
     }
