@@ -212,10 +212,7 @@ python3 scripts/evaluate.py <eval_type>
 Where `<eval_type>` is the evaluation type you wish to run.
 
 #### Available Evaluation Types
-The script supports several evaluation types. Each type evaluates a different aspect of the framework. Below is a table of available evaluation types, their descriptions, and the functions they trigger.
-
-Where <eval_type> is the evaluation type you wish to run.
-
+Below is a table of available evaluation types.
 
 #### Example Commands
 
