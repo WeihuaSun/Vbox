@@ -344,8 +344,8 @@ void MiniSolver::formulate(const vector<unique_ptr<ItemConstraint>> &item_csts, 
             Var var_from = getTopoOrderVar(e.from(), e.to());
             Var var_to = getTopoOrderVar(e.to(), e.from());
 
-            sat_solver_->addClause(mkLit(var_from, false), mkLit(edge_variables[i], true)); // 选择 alpha 边集时，from 在 to 之前
-            sat_solver_->addClause(mkLit(var_to, true), mkLit(edge_variables[i], true));    // 选择 alpha 边集时，to 不在 from 之前
+            sat_solver_->addClause(mkLit(var_from, false), mkLit(edge_variables[i], true));
+            sat_solver_->addClause(mkLit(var_to, true), mkLit(edge_variables[i], true));
         }
 
         for (const auto &e : cst->beta_edges())

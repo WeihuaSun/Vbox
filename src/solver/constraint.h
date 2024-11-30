@@ -116,7 +116,6 @@ public:
     const DSG::Edge *reason() const;
     bool assign() const;
 
-    // 修改函数
     void set_level(int level);
     void set_reason(const DSG::Edge *reason);
     void set_assign(bool assign);

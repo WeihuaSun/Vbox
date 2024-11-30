@@ -724,7 +724,7 @@ void Vbox::prune_pred_first(unordered_set<DSG::Edge> &edge_queue)
             }
         }
 
-        if (cst->size() == 0) // 剪枝后
+        if (cst->size() == 0)
         {
             throw SerializableException("prune predicate constraints error.");
             // cst_it = pred_csts_.erase(cst_it);
