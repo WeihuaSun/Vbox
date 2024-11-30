@@ -29,10 +29,10 @@ set(SOURCES
 
 add_executable(SerVerifier ${SOURCES})
 
-# 查找 MonoSAT 库
+
 find_library(MONOSAT_LIB monosat /usr/local/lib)
 
-# 确保指定的库文件存在
+
 if(NOT MONOSAT_LIB)
     message(FATAL_ERROR "The specified MonoSAT library does not exist.")
 endif()
