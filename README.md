@@ -23,13 +23,6 @@ Before installing Vbox, ensure that you have the following dependencies installe
 
 - **g++ 7.5.0**
 - **CMake 3.10.2**
-- **MonoSAT** 
-
-sudo apt install zlib1g-dev
-sudo apt install libgmp-dev
-cmake .
-make
-sudo make install
 
 ### Steps
 
@@ -39,6 +32,15 @@ sudo make install
    git clone https://github.com/WeihuaSun/Vbox.git
    cd Vbox
    ```
+2. **Install MonoSAT:**
+   ```bash
+   apt install zlib1g-dev
+   apt install libgmp-dev
+   cd monosat
+   cmake .
+   make
+   make install
+
 2. **Build the project:**
 
    ```bash
