@@ -1,5 +1,5 @@
-{"msg":"Application started","level":"INFO","ts":"2024-11-30T05:23:05.479834991Z","started_at":"2024-11-30 05:23:05.479753151 +00:00"}
-{"msg":"each read from latest write","level":"INFO","ts":"2024-11-30T05:23:06.279986285Z"}
-{"msg":"atomic reads","level":"INFO","ts":"2024-11-30T05:23:06.280041891Z"}
-{"msg":"atleast not read commmitted","level":"INFO","ts":"2024-11-30T05:23:06.628789334Z","number of transactions":"8195"}
-{"msg":"using our algorithms","level":"INFO","ts":"2024-11-30T05:23:06.628862157Z"}
+{"msg":"Application started","level":"INFO","ts":"2024-11-30T08:04:13.36492864Z","started_at":"2024-11-30 08:04:13.364841833 +00:00"}
+{"msg":"each read from latest write","level":"INFO","ts":"2024-11-30T08:04:13.783488002Z"}
+{"msg":"atomic reads","level":"INFO","ts":"2024-11-30T08:04:13.783544557Z"}
+{"msg":"atleast not read commmitted","level":"INFO","ts":"2024-11-30T08:04:13.966585775Z","number of transactions":"8158"}
+{"msg":"using our algorithms","level":"INFO","ts":"2024-11-30T08:04:13.966657921Z"}

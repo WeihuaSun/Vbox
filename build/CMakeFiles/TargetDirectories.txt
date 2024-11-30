@@ -1,3 +1,0 @@
-/workspace/Vbox/build/CMakeFiles/rebuild_cache.dir
-/workspace/Vbox/build/CMakeFiles/SerVerifier.dir
-/workspace/Vbox/build/CMakeFiles/edit_cache.dir

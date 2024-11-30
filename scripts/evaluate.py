@@ -849,6 +849,7 @@ if __name__ == "__main__":
         eval_scalability()
         eval_completeness_real_world()
     elif args.eval == "completeness":
+        eval_completeness_real_world()
         eval_completeness_coo()
     elif args.eval == "construct":
         eval_construct_closure()

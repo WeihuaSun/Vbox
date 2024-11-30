@@ -33,6 +33,7 @@ Before installing Vbox, ensure that you have the following dependencies installe
    ```
 2. **Install MonoSAT:**
    ```bash
+   git clone https://github.com/sambayless/monosat.git
    apt install zlib1g-dev
    apt install libgmp-dev
    cd monosat
@@ -49,6 +50,7 @@ Before installing Vbox, ensure that you have the following dependencies installe
    cd build
    cmake ..
    make
+   cd ..
    ```
 ## Usage
 
@@ -73,7 +75,7 @@ Before installing Vbox, ensure that you have the following dependencies installe
    
     
 ```bash
-./build/SerVerifier /path/to/logs vbox true true true prune_opt purdom+ italino_opt vboxsat
+./build/SerVerifier ./data/vbox_data/blindw_pred_10000 vbox true true true prune_opt purdom+ italino_opt vboxsat
 ```
 
 # Reproducing Experimental Results
@@ -107,6 +109,7 @@ Navigate to the DBcop directory and install it:
 ```bash
 cd baselines/dbcop
 cargo install --path .
+cd ../..
 ```
 
 ## Configuring Cobra
@@ -143,7 +146,7 @@ Then, navigate to the Cobra directory and load the environment:
 You also need to set the CUDA_HOME and JAVA_HOME in CobraHome/./env.sh
 
 ```bash
-cd ./baseline/CobraHome/
+cd ./baselines/CobraHome/
 source ./env.sh
 ```
 
@@ -154,6 +157,7 @@ cd $COBRA_HOME/CobraVerifier/
 mvn install:install-file -Dfile=./monosat/monosat.jar -DgroupId=monosat \
   -DartifactId=monosat -Dversion=1.4.0 -Dpackaging=jar -DgeneratePom=true
 ./run.sh build
+cd ../../..
 ```
 
 ## Running the Experiment Script
