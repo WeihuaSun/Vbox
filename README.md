@@ -89,7 +89,7 @@ To reproduce the results, you first need to configure **DBcop**, which is the im
 Clone the DBcop Git repository, ensuring that you are using the correct branch (`oopsla-2019`):
 
 ```bash
-git clone -b oopsla-2019 https://github.com/WeihuaSun/dbcop.git ./baselines/dbcop
+git clone -b oopsla-2019 https://github.com/rnbguy/dbcop.git ./baselines/dbcop
 ```
 
 ### Step 2: Install Environment
@@ -140,7 +140,7 @@ source ~/.bashrc
 
 Then, navigate to the Cobra directory and load the environment:
 
-你也需要配置里面的CUDA_HOME和JAVA_HOME。
+You also need to set the CUDA_HOME and JAVA_HOME in CobraHome/./env.sh
 
 ```bash
 cd ./baseline/CobraHome/
@@ -166,12 +166,50 @@ apt-get install python3.6
 pip install psutil
 ```
 
-After completing the above steps, you can run the experiment script to evaluate the performance and reproduce the results. Simply execute the following command:
+### Running the Script
+After completing the above steps, you can run the experiment script to evaluate the performance and reproduce the results. 
+
+To run the script, execute the following command:
 
 ```bash
-python3 scripts evaluate.py
+python3 scripts/evaluate.py <eval_type>
+```
+Where `<eval_type>` is the evaluation type you wish to run.
+
+#### Available Evaluation Types
+The script supports several evaluation types. Each type evaluates a different aspect of the framework. Below is a table of available evaluation types, their descriptions, and the functions they trigger.
+
+Where <eval_type> is the evaluation type you wish to run.
+
+
+#### Example Commands
+
+1. Basic Efficiency Test:
+```bash
+python3 scripts/evaluate.py base
+```
+2.  Scalability Test:
+```bash
+python3 scripts/evaluate.py scalability
+```
+3.   Completeness Test:
+ ```bash
+python3 scripts/evaluate.py completeness
+```
+4. Construction of Closure Test:
+```bash
+python3 scripts/evaluate.py construct
+```
+5. Update Efficiency Test:
+
+```bash
+python3 scripts/evaluate.py update
+```
+6. Solver Performance Test:
+```bash
+python3 scripts/evaluate.py solver
 ```
 
-Note: The experiment may take several hours to complete. The results will be saved in the output/raw folder.
+Note: The some evalutions may take several hours to complete. The results will be saved in the output/raw folder.
 
 Note: Ensure that all dependencies are correctly installed and environment variables are set, or you may encounter runtime errors.

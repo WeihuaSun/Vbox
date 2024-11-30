@@ -761,7 +761,7 @@ def eval_update_closure(num_trxs=10000):
         csv_writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         headers = ["method"] + histories
         csv_writer.writerow(headers)
-        methods = ["italino+","italino","italino+"]
+        methods = ["italino+","italino","warshall"]
         
         for i, benchmark in enumerate(histories):
             case_dir = vbox_data_root / benchmark
@@ -792,7 +792,7 @@ def eval_construct_closure(num_trxs=10000):
         csv_writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         headers = ["method"] + histories
         csv_writer.writerow(headers)
-        methods = ["purdom+","purdom","purdom+","italino+","italino"]
+        methods = ["purdom+","purdom","warshall","italino+","italino"]
         
         for i, benchmark in enumerate(histories):
             case_dir = vbox_data_root / benchmark
@@ -839,32 +839,23 @@ def eval_solver(num_trxs=10000):
             csv_writer.writerow(row)
 
 
-# eval_solver()
-# eval_construct_closure()
-# eval_update_closure()
-# eval_scalability()
-
-# eval_completeness_coo()
-# eval_completeness_coo()
-eval_efficiency()
-# eval_completeness_real_world()
-
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('eval', type=str, choices=['base', 'scalability','completeness','construct','update','solver'])
-#     args = parser.parse_args()
-#     if args.eval == "base":
-#         pass
-#     elif args.eval =="scalability":
-#         pass
-#     elif args.eval == "completeness":
-#         pass
-#     elif args.eval == "construct":
-#         pass
-#     elif args.eval == "update":
-#         pass
-#     elif args.eval == "solver":
-#         pass
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('eval', type=str, choices=['base', 'scalability','completeness','construct','update','solver'])
+    args = parser.parse_args()
+    if args.eval == "base":
+        eval_efficiency()
+    elif args.eval =="scalability":
+        eval_scalability()
+        eval_completeness_real_world()
+    elif args.eval == "completeness":
+        eval_completeness_coo()
+    elif args.eval == "construct":
+        eval_construct_closure()
+    elif args.eval == "update":
+        eval_update_closure()
+    elif args.eval == "solver":
+        eval_solver()
         
     
     
