@@ -183,7 +183,7 @@ cd ../../..
 
 ## Running the Experiment Script
 
-### Transform format+
+### Transform format
 
 We need to transform the history in vbox format into a format usable by dbcop, so first compile the transform program.
 
@@ -248,3 +248,7 @@ python3 scripts/evaluate.py solver
 Some evalutions may take several hours to complete. The results will be saved in the output/raw folder.
 
 Note: Ensure that all dependencies are correctly installed and environment variables are set, or you may encounter runtime errors.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.

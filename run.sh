@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOG_DIR="/workspace/Vbox/data/vbox_data/blindw_pred_10000"
+LOG_DIR="/data/vbox_data/blindw_pred_10000"
 VERIFIER="vbox"
 TIMING_ENABLED="true"
 COMPACTION_ENABLED="true"
