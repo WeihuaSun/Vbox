@@ -1,4 +1,8 @@
-
+#include "cadical.hpp"
+extern "C"
+{
+#include "kissat.h"
+}
 #include "constraint.h"
 #include "graph/graph.h"
 #include "graph/transitive_closure.h"
@@ -58,6 +62,30 @@ public:
 
 private:
     SolverPtr sat_solver_;
+};
+
+class KissatSolver
+{
+public:
+    KissatSolver();
+    void formulate(const std::vector<std::unique_ptr<ItemConstraint>> &item_csts, const std::unordered_set<DSG::Edge> &edges);
+    bool check();
+    void clear();
+
+private:
+    kissat *sat_solver_;
+};
+
+class CaDiCaLSolver
+{
+public:
+    CaDiCaLSolver();
+    void formulate(const std::vector<std::unique_ptr<ItemConstraint>> &item_csts, const std::unordered_set<DSG::Edge> &edges);
+    bool check();
+    void clear();
+
+private:
+    CaDiCaL::Solver sat_solver_;
 };
 
 class MonoSolver

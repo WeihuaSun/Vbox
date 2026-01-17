@@ -805,8 +805,7 @@ def eval_construct_closure(num_trxs=10000):
             for i in range(len(histories)):
                 row.append(f"{construct_time[i][j]} us") 
             csv_writer.writerow(row)
-        
-
+            
 def eval_solver(num_trxs=10000):
     histories = [
         f"blindw_wh_{num_trxs}",
@@ -823,19 +822,59 @@ def eval_solver(num_trxs=10000):
         headers = ["solver"] + histories
         csv_writer.writerow(headers)
         
-        methods = ["vboxsat", "monosat", "minisat"]
+        methods = ["vboxsat", "monosat", "minisat", "kissat", "cadical"]
         
         for i, benchmark in enumerate(histories):
             case_dir = vbox_data_root / benchmark
             for method in methods:
                 _, _, _, stdout = run_vbox(log_dir=case_dir, sat=method)
-                solve_time[i].append(get_solve_time(stdout))
+
+                if "timeout" in stdout.lower() or "Process terminated due to timeout" in stdout:
+                    solve_time[i].append("-")  # us
+                else:
+                    t = get_solve_time(stdout)
+                    if t == 0:
+                        solve_time[i].append("-")
+                    else:
+                        solve_time[i].append(t)
+                # ===================================================
             
         for j, method in enumerate(methods):
             row = [method]
             for i in range(len(histories)):
-                row.append(f"{solve_time[i][j]} us") 
+                row.append(f"{solve_time[i][j]} us")
             csv_writer.writerow(row)
+
+
+# def eval_solver(num_trxs=10000):
+#     histories = [
+#         f"blindw_wh_{num_trxs}",
+#         f"blindw_wr_{num_trxs}",
+#         f"blindw_rh_{num_trxs}",
+#         f"ctwitter_{num_trxs}",
+#     ]
+#     path = raw_root / "solver.csv"
+#     solve_time = [[] for _ in range(len(histories))]
+
+#     with open(path, mode="w", newline="") as csvfile:
+#         csv_writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+#         headers = ["solver"] + histories
+#         csv_writer.writerow(headers)
+        
+#         methods = ["vboxsat", "monosat", "minisat","kissat","cadical"]
+        
+#         for i, benchmark in enumerate(histories):
+#             case_dir = vbox_data_root / benchmark
+#             for method in methods:
+#                 _, _, _, stdout = run_vbox(log_dir=case_dir, sat=method)
+#                 solve_time[i].append(get_solve_time(stdout))
+            
+#         for j, method in enumerate(methods):
+#             row = [method]
+#             for i in range(len(histories)):
+#                 row.append(f"{solve_time[i][j]} us") 
+#             csv_writer.writerow(row)
 
 
 if __name__ == "__main__":

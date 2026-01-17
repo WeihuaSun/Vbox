@@ -121,6 +121,18 @@ void Vbox::solve_constraint()
         solver.formulate(item_csts_, pred_csts_);
         satisfiable = solver.check();
     }
+    else if (options_.sat == "cadical")
+    {
+        CaDiCaLSolver solver;
+        solver.formulate(item_csts_, edges_);
+        satisfiable = solver.check();
+    }
+    else if (options_.sat == "kissat")
+    {
+        KissatSolver solver;
+        solver.formulate(item_csts_, edges_);
+        satisfiable = solver.check();
+    }
     if (!satisfiable)
     {
         throw SerializableException("unsatisfiable.");
@@ -255,7 +267,7 @@ void Vbox::generate_item_constraint()
     {
         for (auto &entry : installs_)
         {
-            
+
             uint64_t key = entry.first;
             set<uint32_t> &key_installers = entry.second;
             vector<uint32_t> active_vertices;

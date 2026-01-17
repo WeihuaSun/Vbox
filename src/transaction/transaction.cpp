@@ -347,7 +347,14 @@ bool TransactionManager::load(const string &root)
     closedir(dir);
     trxs_.clear();
     trxs_.emplace_back(move(init_transaction()));
-    priority_queue<pair<unique_ptr<Transaction>, int>, vector<pair<Transaction *, int>>, CompareTransactions> minHeap;
+    // priority_queue<pair<unique_ptr<Transaction>, int>, vector<pair<Transaction *, int>>, CompareTransactions> minHeap;
+    using HeapElem = pair<Transaction *, int>;
+
+    priority_queue<
+        HeapElem,
+        vector<HeapElem>,
+        CompareTransactions>
+        minHeap;
     vector<size_t> indices(sessions.size(), 0);
 
     for (size_t i = 0; i < sessions.size(); ++i)

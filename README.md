@@ -42,8 +42,21 @@ Before installing Vbox, ensure that you have the following dependencies installe
    make install
    cd ..
    ```
-
-2. **Build the project:**
+3. **Install Kissat:**
+   ```bash
+   git clone  https://github.com/arminbiere/kissat.git
+   cd kissat
+   ./configure && make test
+   cd ..
+   ```
+4. **Install CaDiCaL:**
+   ```bash
+   git clone https://github.com/arminbiere/cadical.git
+   cd cadical
+   ./configure && make
+   cd ..
+   ```
+5. **Build the project:**
 
    ```bash
    mkdir build
@@ -59,17 +72,17 @@ Before installing Vbox, ensure that you have the following dependencies installe
    ```bash
     ./build/SerVerifier <log> <verifier> <time> <compact> <merge> <prune> <construct> <update> <sat>
    ```
-| Parameter   | Description                                                 | Options                                        |
-|-------------|-------------------------------------------------------------|------------------------------------------------|
-| `<log>`     | Path to the directory containing the log files.             | -                                              |
-| `<verifier>`| Type of verifier to use.                                    | `vbox`, `leopard`                              |
-| `<time>`    | Timing enabled.                                             | `true`, `false`                                |
-| `<compact>` | Compaction enabled.                                         | `true`, `false`                                |
-| `<merge>`   | Merging enabled.                                            | `true`, `false`                                |
-| `<prune>`   | Pruning strategy.                                           | `prune_opt`, `prune`                |
-| `<construct>`| TC construction strategy.                                  | `purdom+`, `warshall`, `purdom`, `italino`, `italino+` |
-| `<update>`  | TC update strategy.                                         | `italino+`, `warshall`, `italino`             |
-| `<sat>`     | SAT strategy.                                               | `vboxsat`, `monosat`, `minsat`                 |
+| Parameter     | Description                                     | Options                                                |
+| ------------- | ----------------------------------------------- | ------------------------------------------------------ |
+| `<log>`       | Path to the directory containing the log files. | -                                                      |
+| `<verifier>`  | Type of verifier to use.                        | `vbox`, `leopard`                                      |
+| `<time>`      | Timing enabled.                                 | `true`, `false`                                        |
+| `<compact>`   | Compaction enabled.                             | `true`, `false`                                        |
+| `<merge>`     | Merging enabled.                                | `true`, `false`                                        |
+| `<prune>`     | Pruning strategy.                               | `prune_opt`, `prune`                                   |
+| `<construct>` | TC construction strategy.                       | `purdom+`, `warshall`, `purdom`, `italino`, `italino+` |
+| `<update>`    | TC update strategy.                             | `italino+`, `warshall`, `italino`                      |
+| `<sat>`       | SAT strategy.                                   | `vboxsat`, `monosat`, `minsat`                         |
 
 ### Example
    

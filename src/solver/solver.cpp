@@ -81,7 +81,7 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
         {
             for (int i = sat_trail_size; i < trail.size(); ++i)
             {
-                Monosat::Lit& p = trail[i];
+                Monosat::Lit &p = trail[i];
                 int v = var(p);
                 ConstraintVar &var = vars_[v];
                 var.set_assign(assigns[v] == l_true);
@@ -158,7 +158,7 @@ void VboxSolver::v_propagate(unordered_set<ConstraintVar *> &reason)
 
 int VboxSolver::v_analyze(unordered_set<ConstraintVar *> &reason, vector<ConstraintVar *> &learned)
 {
-    cout<<"analyse"<<endl;
+    cout << "analyse" << endl;
     int back_level = 0;
     int count = 0;
     ConstraintVar *conflict = nullptr;
@@ -231,7 +231,7 @@ void VboxSolver::v_calc_reason(unordered_set<ConstraintVar *> &reason, const ::E
 
 void VboxSolver::v_backtrace(int bk_level)
 {
-    cout << "backtrace" << endl;
+    // cout << "backtrace" << endl;
     if (decisionLevel() > bk_level)
     {
         for (int c = v_trail_.size() - 1; c >= this->v_trail_lim_[bk_level]; c--)
@@ -307,17 +307,204 @@ bool VboxSolver::check()
     return true;
 }
 
+///////////////////////////////////////////////////////////////////////////
+
+KissatSolver::KissatSolver() { sat_solver_ = kissat_init(); }
+
+void KissatSolver::formulate(const vector<unique_ptr<ItemConstraint>> &item_csts, const unordered_set<::Edge> &edges)
+{
+    int nextVar = 1;
+    vector<int> edge_vars;
+    unordered_map<int, unordered_map<int, int>> topo_order;
+    auto getTopoVar = [&](int u, int v) -> int
+    {
+        if (!topo_order[u].count(v))
+        {
+            topo_order[u][v] = nextVar++;
+        }
+        return topo_order[u][v];
+    };
+
+    for (size_t i = 0; i < item_csts.size(); ++i)
+    {
+        edge_vars.push_back(nextVar++);
+    }
+
+    int i = 0;
+    for (const auto &cst : item_csts)
+    {
+        for (const ::Edge &e : cst->alpha_edges())
+        {
+            int uv = getTopoVar(e.from(), e.to());
+            int vu = getTopoVar(e.to(), e.from());
+            kissat_add(sat_solver_, uv);
+            kissat_add(sat_solver_, -edge_vars[i]);
+            kissat_add(sat_solver_, 0);
+            kissat_add(sat_solver_, -vu);
+            kissat_add(sat_solver_, -edge_vars[i]);
+            kissat_add(sat_solver_, 0);
+        }
+        for (const ::Edge &e : cst->beta_edges())
+        {
+            int uv = getTopoVar(e.from(), e.to());
+            int vu = getTopoVar(e.to(), e.from());
+            kissat_add(sat_solver_, uv);
+            kissat_add(sat_solver_, edge_vars[i]);
+            kissat_add(sat_solver_, 0);
+            kissat_add(sat_solver_, -vu);
+            kissat_add(sat_solver_, edge_vars[i]);
+            kissat_add(sat_solver_, 0);
+        }
+        ++i;
+    }
+
+    for (const ::Edge &e : edges)
+    {
+        int uv = getTopoVar(e.from(), e.to());
+        kissat_add(sat_solver_, -uv);
+        kissat_add(sat_solver_, 0);
+    }
+
+    for (const auto &[u, map_v] : topo_order)
+    {
+        for (const auto &[v, uv] : map_v)
+        {
+            int vu = getTopoVar(v, u);
+            kissat_add(sat_solver_, -uv);
+            kissat_add(sat_solver_, -vu);
+            kissat_add(sat_solver_, 0);
+            kissat_add(sat_solver_, uv);
+            kissat_add(sat_solver_, vu);
+            kissat_add(sat_solver_, 0);
+        }
+    }
+
+    for (const auto &[u, map_v] : topo_order)
+    {
+        for (const auto &[v, uv] : map_v)
+        {
+            for (const auto &[w, vw] : topo_order[v])
+            {
+                if (u == w)
+                    continue;
+                int uw = getTopoVar(u, w);
+                kissat_add(sat_solver_, uv);
+                kissat_add(sat_solver_, vw);
+                kissat_add(sat_solver_, -uw);
+                kissat_add(sat_solver_, 0);
+            }
+        }
+    }
+}
+
+bool KissatSolver::check()
+{
+    return kissat_solve(sat_solver_) == 10;
+}
+
+void KissatSolver::clear() { kissat_release(sat_solver_); }
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+CaDiCaLSolver::CaDiCaLSolver() {}
+
+void CaDiCaLSolver::formulate(const vector<unique_ptr<ItemConstraint>> &item_csts, const unordered_set<::Edge> &edges)
+{
+    int nextVar = 1;
+    vector<int> edge_vars;
+    unordered_map<int, unordered_map<int, int>> topo_order;
+    auto getTopoVar = [&](int u, int v) -> int
+    {
+        if (!topo_order[u].count(v))
+        {
+            topo_order[u][v] = nextVar++;
+        }
+        return topo_order[u][v];
+    };
+
+    for (size_t i = 0; i < item_csts.size(); ++i)
+    {
+        edge_vars.push_back(nextVar++);
+    }
+
+    int i = 0;
+    for (const auto &cst : item_csts)
+    {
+        for (const ::Edge &e : cst->alpha_edges())
+        {
+            int uv = getTopoVar(e.from(), e.to());
+            int vu = getTopoVar(e.to(), e.from());
+            sat_solver_.add(uv);
+            sat_solver_.add(-edge_vars[i]);
+            sat_solver_.add(0);
+            sat_solver_.add(-vu);
+            sat_solver_.add(-edge_vars[i]);
+            sat_solver_.add(0);
+        }
+        for (const ::Edge &e : cst->beta_edges())
+        {
+            int uv = getTopoVar(e.from(), e.to());
+            int vu = getTopoVar(e.to(), e.from());
+            sat_solver_.add(uv);
+            sat_solver_.add(edge_vars[i]);
+            sat_solver_.add(0);
+            sat_solver_.add(-vu);
+            sat_solver_.add(edge_vars[i]);
+            sat_solver_.add(0);
+        }
+        ++i;
+    }
+
+    for (const ::Edge &e : edges)
+    {
+        int uv = getTopoVar(e.from(), e.to());
+        sat_solver_.add(-uv);
+        sat_solver_.add(0);
+    }
+
+    for (const auto &[u, map_v] : topo_order)
+    {
+        for (const auto &[v, uv] : map_v)
+        {
+            int vu = getTopoVar(v, u);
+            sat_solver_.add(-uv);
+            sat_solver_.add(-vu);
+            sat_solver_.add(0);
+            sat_solver_.add(uv);
+            sat_solver_.add(vu);
+            sat_solver_.add(0);
+        }
+    }
+
+    for (const auto &[u, map_v] : topo_order)
+    {
+        for (const auto &[v, uv] : map_v)
+        {
+            for (const auto &[w, vw] : topo_order[v])
+            {
+                if (u == w)
+                    continue;
+                int uw = getTopoVar(u, w);
+                sat_solver_.add(uv);
+                sat_solver_.add(vw);
+                sat_solver_.add(-uw);
+                sat_solver_.add(0);
+            }
+        }
+    }
+}
+
+bool CaDiCaLSolver::check()
+{
+    return sat_solver_.solve() == 10;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
 MiniSolver::MiniSolver() { sat_solver_ = newSolver(); }
 
 void MiniSolver::formulate(const vector<unique_ptr<ItemConstraint>> &item_csts, const unordered_set<::Edge> &edges)
 {
     vector<Var> edge_variables;
-
-    for (size_t i = 0; i < item_csts.size(); ++i)
-    {
-        edge_variables.push_back(sat_solver_->newVar());
-    }
-
     unordered_map<int, unordered_map<int, Var>> topo_order;
 
     auto getTopoOrderVar = [&](int u, int v) -> Var
@@ -329,13 +516,19 @@ void MiniSolver::formulate(const vector<unique_ptr<ItemConstraint>> &item_csts, 
         return topo_order[u][v];
     };
 
+    for (size_t i = 0; i < item_csts.size(); ++i)
+    {
+        edge_variables.push_back(sat_solver_->newVar());
+    }
+
     for (const ::Edge &e : edges)
     {
         Var var_from = getTopoOrderVar(e.from(), e.to());
-        Var var_to = getTopoOrderVar(e.to(), e.from());
+        // Var var_to = getTopoOrderVar(e.to(), e.from());
         sat_solver_->addClause(mkLit(var_from, false));
-        sat_solver_->addClause(mkLit(var_to, true));
+        // sat_solver_->addClause(mkLit(var_to, true));
     }
+
     int i = 0;
     for (const unique_ptr<ItemConstraint> &cst : item_csts)
     {
@@ -359,6 +552,30 @@ void MiniSolver::formulate(const vector<unique_ptr<ItemConstraint>> &item_csts, 
         }
 
         i++;
+    }
+
+    for (const auto &[u, map_v] : topo_order)
+    {
+        for (const auto &[v, uv] : map_v)
+        {
+            Var vu = getTopoOrderVar(v, u);
+            sat_solver_->addClause(mkLit(uv, false), mkLit(vu, false));
+            sat_solver_->addClause(mkLit(uv, true), mkLit(vu, true));
+        }
+    }
+
+    for (const auto &[u, map_v] : topo_order)
+    {
+        for (const auto &[v, uv] : map_v)
+        {
+            for (const auto &[w, vw] : topo_order[v])
+            {
+                if (u == w)
+                    continue;
+                Var uw = getTopoOrderVar(u, w);
+                sat_solver_->addClause(mkLit(uv, true), mkLit(vw, true), mkLit(uw, false));
+            }
+        }
     }
 }
 
