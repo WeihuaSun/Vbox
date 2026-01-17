@@ -46,13 +46,15 @@ Before installing Vbox, ensure that you have the following dependencies installe
    ```bash
    git clone  https://github.com/arminbiere/kissat.git
    cd kissat
-   ./configure && make test
+   git checkout f7e57764c19cf35198830575492dc9d80e872b55
+   ./configure && make
    cd ..
    ```
 4. **Install CaDiCaL:**
    ```bash
    git clone https://github.com/arminbiere/cadical.git
    cd cadical
+   git checkout f13d74439a5b5c963ac5b02d05ce93a8098018b8
    ./configure && make
    cd ..
    ```
