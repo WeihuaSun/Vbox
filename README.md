@@ -100,7 +100,7 @@ The datasets used for the experiments are stored in the following directories:
 ## 1. `data/vbox_data`
 This directory contains the Vbox format transaction history files used in the experiments. 
 
-We implemented a log generator called **[Vgen](https://anonymous.4open.science/status/Vgen-F8D4)** to generate transaction logs in the Vbox format. You can refer to the **Vgen** code for more details on how to generate logs for various types of transaction histories.
+We implemented a log generator called **[Vgen](https://anonymous.4open.science/r/Vgen-F8D4/)** to generate transaction logs in the Vbox format. You can refer to the **Vgen** code for more details on how to generate logs for various types of transaction histories.
 
 ## 2. `data/coo`
 This directory contains synthetic transaction histories generated according to the transaction anomaly definitions from [Coo: Consistency Check for Transactional Databases](https://arxiv.org/pdf/2206.14602). These histories are generated using **Vgen** to simulate various transaction anomalies. 
